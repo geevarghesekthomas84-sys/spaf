@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "spaf"
+version = "1.0.0"
+description = "Smart Pentesting Automation Framework"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "typer>=0.9.0",
+    "rich>=13.0.0",
+    "aiohttp>=3.8.0",
+    "motor>=3.3.0",
+    "dnspython>=2.4.0",
+    "python-whois>=0.8.0",
+    "pymongo>=4.5.0",
+    "python-dotenv>=1.0.0",
+]
+
+[tool.setuptools]
+packages = ["spaf"]
+
+[project.scripts]
+spaf = "spaf.cli.main:entry_point"

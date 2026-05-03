@@ -8,8 +8,14 @@
   <img src="https://img.shields.io/github/license/geevarghesekthomas84-sys/spaf?style=for-the-badge&color=yellow" alt="License">
   <img src="https://img.shields.io/github/stars/geevarghesekthomas84-sys/spaf?style=for-the-badge&color=green" alt="Stars">
   <img src="https://img.shields.io/github/forks/geevarghesekthomas84-sys/spaf?style=for-the-badge&color=blue" alt="Forks">
-  <img src="https://img.shields.io/badge/AI--Powered-Gemini%20%7C%20Claude-red?style=for-the-badge" alt="AI-Powered">
   <img src="https://img.shields.io/badge/Python-3.9+-blue?style=for-the-badge&logo=python" alt="Python Version">
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Google%20Gemini-8E75B2?style=for-the-badge&logo=googlegemini&logoColor=white" alt="Gemini">
+  <img src="https://img.shields.io/badge/Anthropic%20Claude-D97757?style=for-the-badge&logo=anthropic&logoColor=white" alt="Claude">
+  <img src="https://img.shields.io/badge/Ollama-000000?style=for-the-badge&logo=ollama&logoColor=white" alt="Ollama">
+  <img src="https://img.shields.io/badge/LM%20Studio-0078D4?style=for-the-badge&logo=windows&logoColor=white" alt="LM Studio">
 </p>
 
 <p align="center">

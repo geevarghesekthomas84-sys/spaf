@@ -158,6 +158,12 @@ def watch(
 ):
     """Monitor a target continuously and alert on changes."""
     async def run():
+        try:
+            await _init_db()
+        except ConnectionError:
+            console.print("[bold red]Database Error:[/bold red] Could not connect to MongoDB. Use --no-db flag if available.")
+            raise typer.Exit(1)
+
         console.print(f"[bold cyan]Shadow Scan started for {target}[/bold cyan] (Interval: {interval}s)")
         module_map = {
             "recon": ReconModule,

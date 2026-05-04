@@ -135,6 +135,8 @@ class NetworkModule(BaseModule):
                         ))
         except Exception as e:
             logger.error(f"XML Parsing error: {e}")
+        return findings
+
     async def _lookup_cves(self, product: str, version: str) -> List[str]:
         if product == "unknown" or version == "unknown":
             return []

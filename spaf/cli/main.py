@@ -382,16 +382,23 @@ def recon(
 
 @app.command()
 def scan(
-    target: str = typer.Argument(..., help="Target domain or IP"),
-    ports: str = typer.Option("1-1024", "--ports", help="Port range (e.g., 1-65535)"),
-    intensity: str = typer.Option("normal", "--intensity", help="Scan intensity: light|normal|aggressive"),
-    no_db: bool = typer.Option(False, "--no-db", help="Run in offline mode without database logging")
+    target: str      = typer.Argument(..., help="Target domain or IP"),
+    ports: str       = typer.Option("1-1024",   "--ports",      help="Port range (e.g., 1-65535)"),
+    intensity: str   = typer.Option("normal",   "--intensity",  help="Scan intensity: light|normal|aggressive"),
+    scanner: str     = typer.Option("nmap",     "--scanner",    help="Scanner engine: nmap|rustscan"),
+    ulimit: int      = typer.Option(5000,        "--ulimit",     help="RustScan: open file descriptor limit"),
+    batch_size: int  = typer.Option(2500,        "--batch-size", help="RustScan: ports per batch"),
+    no_db: bool      = typer.Option(False,       "--no-db",      help="Run in offline mode without database logging"),
 ):
-    """Run a network port scan using Nmap on one or more targets."""
+    """Run a network port scan using Nmap or RustScan on one or more targets."""
     targets = load_targets(target)
-    
+
     if intensity not in ["light", "normal", "aggressive"]:
         console.print("[bold red]Error:[/bold red] Intensity must be light, normal, or aggressive.")
+        raise typer.Exit(1)
+
+    if scanner not in ["nmap", "rustscan"]:
+        console.print("[bold red]Error:[/bold red] Scanner must be nmap or rustscan.")
         raise typer.Exit(1)
 
     async def run():
@@ -400,12 +407,20 @@ def scan(
                 await _init_db()
             except ConnectionError:
                 raise typer.Exit(1)
-            
-        options = {"ports": ports, "intensity": intensity, "no_db": no_db}
+
+        options = {
+            "ports":      ports,
+            "intensity":  intensity,
+            "scanner":    scanner,
+            "ulimit":     ulimit,
+            "batch_size": batch_size,
+            "no_db":      no_db,
+        }
         tasks = [engine.run_module(NetworkModule, t, options) for t in targets]
         await asyncio.gather(*tasks)
-    
+
     asyncio.run(run())
+
 
 @app.command()
 def webscan(

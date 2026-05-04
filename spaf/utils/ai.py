@@ -1,17 +1,23 @@
 import os
 import json
+import asyncio
 from typing import List, Optional, Dict, Any
 
+# ── Google GenAI (new SDK) ────────────────────────────────────────────────────
 try:
-    import google.generativeai as genai
+    from google import genai as google_genai
+    from google.genai import types as genai_types
 except ImportError:
-    genai = None
+    google_genai = None
+    genai_types  = None
 
+# ── Anthropic ─────────────────────────────────────────────────────────────────
 try:
     import anthropic
 except ImportError:
     anthropic = None
 
+# ── OpenAI-compatible (Ollama / LM Studio) ────────────────────────────────────
 try:
     from openai import AsyncOpenAI
 except ImportError:
@@ -21,7 +27,7 @@ from spaf.utils.logger import logger
 
 
 # ---------------------------------------------------------------------------
-# Prompt templates — one tailored system prompt per module type
+# Module-specific prompt templates
 # ---------------------------------------------------------------------------
 
 _SYSTEM_BASE = (
@@ -71,11 +77,11 @@ You are analyzing WEB SECURITY SCAN findings from the SPAF framework.
 
 ### Provide a structured Web Penetration Assessment Report with:
 1. **Critical Finding Highlights** — top-3 most dangerous issues and why.
-2. **Header Misconfiguration Exploitation** — how missing headers enable XSS, clickjacking, MIME sniffing attacks.
+2. **Header Misconfiguration Exploitation** — how missing headers enable XSS, clickjacking, MIME sniffing.
 3. **TLS/Certificate Risk** — practical impact of any TLS weaknesses found.
 4. **Sensitive Path Exposure** — describe what an attacker can do with each exposed path.
 5. **WAF Bypass Suggestions** — techniques relevant to these specific misconfigurations.
-6. **Developer Remediation Code** — provide actual HTTP response header configurations (nginx/apache/node).
+6. **Developer Remediation Code** — provide actual HTTP response header configs (nginx/apache/node).
 
 Reference exact header names, paths, and status codes from the findings.
 """,
@@ -100,21 +106,27 @@ Reference actual URLs and finding types from the data.
 
 class AIOrchestrator:
     def __init__(self):
-        self.provider = os.getenv("AI_PROVIDER", "google").lower()
-        self.google_key = os.getenv("GOOGLE_API_KEY")
-        self.anthropic_key = os.getenv("ANTHROPIC_API_KEY")
-        self.ollama_url = os.getenv("OLLAMA_URL", "http://localhost:11434/v1")
-        self.lm_studio_url = os.getenv("LM_STUDIO_URL", "http://localhost:1234/v1")
+        self.provider        = os.getenv("AI_PROVIDER", "google").lower()
+        self.google_key      = os.getenv("GOOGLE_API_KEY")
+        self.anthropic_key   = os.getenv("ANTHROPIC_API_KEY")
+        self.ollama_url      = os.getenv("OLLAMA_URL", "http://localhost:11434/v1")
+        self.lm_studio_url   = os.getenv("LM_STUDIO_URL", "http://localhost:1234/v1")
+        self.google_model    = os.getenv("GOOGLE_MODEL", "gemini-2.0-flash")
+        self.anthropic_model = os.getenv("ANTHROPIC_MODEL", "claude-3-5-sonnet-20241022")
 
-        if self.google_key and genai:
-            genai.configure(api_key=self.google_key)
+        # ── Google GenAI (new SDK) ────────────────────────────────────────
+        self._google_client = None
+        if self.google_key and google_genai:
+            self._google_client = google_genai.Client(api_key=self.google_key)
 
+        # ── Anthropic ────────────────────────────────────────────────────
         self.anthropic_client = (
             anthropic.AsyncAnthropic(api_key=self.anthropic_key)
             if (self.anthropic_key and anthropic)
             else None
         )
 
+        # ── Local models (Ollama / LM Studio) ────────────────────────────
         self.local_client = None
         if self.provider == "ollama" and AsyncOpenAI:
             self.local_client = AsyncOpenAI(base_url=self.ollama_url, api_key="ollama")
@@ -122,27 +134,31 @@ class AIOrchestrator:
             self.local_client = AsyncOpenAI(base_url=self.lm_studio_url, api_key="lmstudio")
 
     # ------------------------------------------------------------------
-    # Core dispatch — sends a prompt to whichever provider is configured
+    # Core dispatch
     # ------------------------------------------------------------------
 
     async def _call(self, system_msg: str, user_prompt: str, max_tokens: int = 4096) -> str:
         try:
-            if self.provider == "google" and self.google_key and genai:
-                model = genai.GenerativeModel("gemini-pro")
-                response = await model.generate_content_async(
-                    f"{system_msg}\n\n{user_prompt}"
+            # ── Google GenAI (new SDK) ────────────────────────────────────
+            if self.provider == "google" and self._google_client:
+                full_prompt = f"{system_msg}\n\n{user_prompt}"
+                response = await self._google_client.aio.models.generate_content(
+                    model=self.google_model,
+                    contents=full_prompt,
                 )
                 return response.text
 
+            # ── Anthropic Claude ──────────────────────────────────────────
             elif self.provider == "claude" and self.anthropic_client:
                 response = await self.anthropic_client.messages.create(
-                    model="claude-3-opus-20240229",
+                    model=self.anthropic_model,
                     max_tokens=max_tokens,
                     system=system_msg,
                     messages=[{"role": "user", "content": user_prompt}],
                 )
                 return response.content[0].text
 
+            # ── Local (Ollama / LM Studio) ────────────────────────────────
             elif self.local_client:
                 model_name = os.getenv("LOCAL_MODEL")
                 if not model_name:
@@ -157,31 +173,30 @@ class AIOrchestrator:
                     model=model_name or "local-model",
                     messages=[
                         {"role": "system", "content": system_msg},
-                        {"role": "user", "content": user_prompt},
+                        {"role": "user",   "content": user_prompt},
                     ],
                 )
                 return response.choices[0].message.content
 
-            return "⚠️  AI provider not configured. Set AI_PROVIDER and the corresponding API key in your .env file."
+            return (
+                "⚠️  AI provider not configured. "
+                "Set AI_PROVIDER and the corresponding API key in your .env file."
+            )
 
         except Exception as e:
-            logger.error(f"AI call failed: {e}")
+            logger.error(f"AI call failed [{self.provider}]: {e}")
             return f"Error: {str(e)}"
 
     # ------------------------------------------------------------------
-    # General chat (used by `spaf chat`, `spaf shell`, watch alerts, etc.)
+    # Public API
     # ------------------------------------------------------------------
 
     async def chat(self, prompt: str) -> str:
-        """General-purpose AI interaction."""
+        """General-purpose AI interaction (`spaf chat`, `spaf shell`, watch alerts)."""
         return await self._call(_SYSTEM_BASE, prompt)
 
-    # ------------------------------------------------------------------
-    # Generic findings analyser (used by `spaf analyze`)
-    # ------------------------------------------------------------------
-
     async def analyze_findings(self, findings: list) -> str:
-        """Full Red Team assessment report from raw findings list."""
+        """Full Red Team assessment report from a raw findings list (`spaf analyze`)."""
         prompt = f"""
 Analyze these security findings and provide a professional Red Team Assessment Report.
 
@@ -196,35 +211,26 @@ Analyze these security findings and provide a professional Red Team Assessment R
 4. **CVE Correlation** — map findings to specific high-impact CVEs if applicable.
 5. **Prioritized Remediation** — practical step-by-step fix instructions.
 
-Use high-quality GitHub-flavored markdown with code blocks for payloads and remediation scripts.
+Use GitHub-flavored markdown with code blocks for payloads and remediation scripts.
 """
         return await self._call(_SYSTEM_BASE, prompt, max_tokens=4096)
 
-    # ------------------------------------------------------------------
-    # Module-specific AI analysis — called automatically after each scan
-    # ------------------------------------------------------------------
-
     async def analyze_module(self, module_name: str, findings: List[Dict[str, Any]]) -> str:
         """
-        Runs a module-specific AI analysis immediately after a scan completes.
+        Module-specific AI analysis — called automatically after every scan.
         module_name: recon | network | webscan | crawler
+        Falls back to generic analysis if module_name is unknown.
         """
         if not findings:
             return "No findings to analyze."
 
         template = _PROMPTS.get(module_name)
         if not template:
-            # Fallback to generic analysis for unknown module names
             return await self.analyze_findings(findings)
 
-        # Serialize findings — strip MongoDB ObjectId / datetime types safely
         findings_json = json.dumps(findings, indent=2, default=str)
         prompt = template.format(findings_json=findings_json)
         return await self._call(_SYSTEM_BASE, prompt, max_tokens=4096)
-
-    # ------------------------------------------------------------------
-    # Targeted helpers (still used by `spaf poc`, `spaf remediate`, etc.)
-    # ------------------------------------------------------------------
 
     async def generate_poc(self, finding: Dict[str, Any]) -> str:
         """Generate a Python PoC exploit script for a single finding."""

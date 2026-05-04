@@ -174,6 +174,13 @@ ANTHROPIC_API_KEY=your_key
 OLLAMA_URL=http://localhost:11434/v1
 LM_STUDIO_URL=http://localhost:1234/v1
 
+# AI Model overrides (optional)
+GOOGLE_MODEL=gemini-2.0-flash          # or gemini-1.5-pro, gemini-2.0-pro, etc.
+ANTHROPIC_MODEL=claude-3-5-sonnet-20241022
+
+# NIST NVD API (optional — increases CVE lookup rate from 5/30s → 50/30s)
+NIST_API_KEY=your_nvd_api_key          # free at https://nvd.nist.gov/developers/request-an-api-key
+
 # Stealth / OpsSec
 USE_TOR=false
 PROXY_FILE=./proxies.txt

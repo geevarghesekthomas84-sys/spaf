@@ -152,47 +152,121 @@ def poc(
 
 @app.command()
 def watch(
-    target: str = typer.Argument(..., help="Target to monitor"),
-    interval: int = typer.Option(3600, "--interval", help="Scan interval in seconds (default: 1 hour)"),
-    module: str = typer.Option("recon", "--module", help="Module to run (recon, webscan, network, crawl)")
+    target: str   = typer.Argument(..., help="Target to monitor"),
+    interval: int = typer.Option(3600,    "--interval", help="Scan interval in seconds (default: 1 hour)"),
+    module: str   = typer.Option("recon", "--module",   help="Module to run: recon|webscan|network|crawl"),
+    no_ai: bool   = typer.Option(False,   "--no-ai",    help="Skip AI analysis after each scheduled scan"),
+    no_db: bool   = typer.Option(False,   "--no-db",    help="Run without database logging"),
 ):
-    """Monitor a target continuously and alert on changes."""
+    """Monitor a target continuously and alert on changes (Shadow Scan)."""
     async def run():
-        try:
-            await _init_db()
-        except ConnectionError:
-            console.print("[bold red]Database Error:[/bold red] Could not connect to MongoDB. Use --no-db flag if available.")
-            raise typer.Exit(1)
+        if not no_db:
+            try:
+                await _init_db()
+            except ConnectionError:
+                console.print("[bold red]Database Error:[/bold red] Could not connect to MongoDB. Use --no-db flag.")
+                raise typer.Exit(1)
 
         console.print(f"[bold cyan]Shadow Scan started for {target}[/bold cyan] (Interval: {interval}s)")
         module_map = {
-            "recon": ReconModule,
+            "recon":   ReconModule,
             "webscan": WebscanModule,
             "network": NetworkModule,
-            "crawl": CrawlerModule
+            "crawl":   CrawlerModule,
         }
         mod_class = module_map.get(module)
         if not mod_class:
-            console.print(f"[bold red]Error:[/bold red] Unknown module {module}")
+            console.print(f"[bold red]Error:[/bold red] Unknown module '{module}'")
             return
 
+        options = {"no_db": no_db, "no_ai": no_ai}
         last_findings_count = -1
+
         while True:
             console.print(f"[dim]{datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} - Running scheduled scan...[/dim]")
-            results = await engine.run_module(mod_class, target, {"no_db": False})
-            
-            current_count = len(results)
+            results = await engine.run_module(mod_class, target, options)
+
+            current_count = len(results) if results else 0
             if last_findings_count != -1 and current_count > last_findings_count:
-                new_count = current_count - last_findings_count
-                console.print(Panel(f"[bold red]ALERT![/bold red] {new_count} new findings detected for {target}!", border_style="red"))
+                new_count    = current_count - last_findings_count
                 new_findings = results[last_findings_count:]
-                summary = await ai_orchestrator.chat(f"Summarize these NEW findings briefly: {json.dumps(new_findings)}")
-                console.print(f"[bold yellow]AI Summary:[/bold yellow] {summary}")
-                
+                console.print(
+                    Panel(
+                        f"[bold red]ALERT![/bold red] {new_count} new finding(s) detected for {target}!",
+                        border_style="red",
+                    )
+                )
+                if not no_ai:
+                    with console.status("[bold yellow]AI summarizing new findings...[/bold yellow]"):
+                        summary = await ai_orchestrator.chat(
+                            f"Summarize these NEW security findings briefly in 3 bullet points: "
+                            f"{json.dumps(new_findings, default=str)}"
+                        )
+                    console.print(f"[bold yellow]AI Alert Summary:[/bold yellow]\n{summary}")
+
             last_findings_count = current_count
+            console.print(f"[dim]Next scan in {interval}s. Press Ctrl+C to stop.[/dim]")
             await asyncio.sleep(interval)
 
     asyncio.run(run())
+
+
+@app.command(name="ai")
+def ai_analyze(
+    scan_id: str    = typer.Argument(..., help="Scan ID to re-analyze"),
+    module: str     = typer.Option("",  "--module",   help="Module hint: recon|network|webscan|crawler (auto-detected if omitted)"),
+    provider: str   = typer.Option("",  "--provider", help="Override AI provider for this call: google|claude|ollama|lmstudio"),
+):
+    """
+    Re-run AI threat analysis on a previous scan without re-scanning.
+
+    Fetches findings from MongoDB by scan ID and sends them through the
+    module-specific AI prompt pipeline.
+    """
+    async def run():
+        await _init_db()
+
+        # Fetch findings
+        findings = await db.get_vulnerabilities_for_scan(scan_id)
+        if not findings:
+            console.print(f"[bold red]No findings found for scan ID:[/bold red] {scan_id}")
+            raise typer.Exit(1)
+
+        # Auto-detect module from first finding's 'source' field if not given
+        mod = module.strip()
+        if not mod and findings:
+            mod = findings[0].get("source", "").lower()
+
+        # Optional provider override
+        if provider:
+            import os
+            os.environ["AI_PROVIDER"] = provider.lower()
+            # Re-instantiate to pick up the override
+            from spaf.utils.ai import AIOrchestrator
+            orchestrator = AIOrchestrator()
+        else:
+            orchestrator = ai_orchestrator
+
+        console.print(f"\n[bold magenta]Re-analyzing scan [cyan]{scan_id}[/cyan] "
+                      f"([white]{len(findings)}[/white] findings) "
+                      f"using [cyan]{mod or 'generic'}[/cyan] prompt via "
+                      f"[cyan]{orchestrator.provider.upper()}[/cyan]...[/bold magenta]\n")
+
+        with console.status("[bold magenta]AI is analyzing findings...[/bold magenta]", spinner="dots"):
+            analysis = await orchestrator.analyze_module(mod, findings)
+
+        console.print(
+            Panel(
+                analysis,
+                title=f"[bold magenta]🤖 AI Analysis — {scan_id}[/bold magenta]",
+                border_style="magenta",
+                padding=(1, 2),
+            )
+        )
+
+    asyncio.run(run())
+
+
 
 @app.command()
 def shell():

@@ -98,8 +98,8 @@ class ReconModule(BaseModule):
                 if delay > 0:
                     await asyncio.sleep(delay)
                 try:
-                    # Using loop.getaddrinfo for async resolution
-                    loop = asyncio.get_event_loop()
+                    # get_running_loop() is correct inside a running coroutine
+                    loop = asyncio.get_running_loop()
                     await loop.getaddrinfo(sub, None)
                     resolved.append(sub)
                 except Exception:
@@ -127,9 +127,7 @@ class ReconModule(BaseModule):
         findings = []
         for ns in ns_records:
             try:
-                # zone_from_xfr and query.xfr can be slow/blocking
-                loop = asyncio.get_event_loop()
-                # Resolve NS to IP first for xfr
+                loop  = asyncio.get_running_loop()
                 ns_ip = socket.gethostbyname(ns)
                 z = await loop.run_in_executor(None, dns.zone.from_xfr, dns.query.xfr(ns_ip, domain))
                 if z:
@@ -145,8 +143,8 @@ class ReconModule(BaseModule):
 
     async def _get_whois_info(self, domain: str) -> Dict[str, Any]:
         try:
-            # whois is blocking, run in thread
-            loop = asyncio.get_event_loop()
+            # whois is blocking — offload to thread pool
+            loop = asyncio.get_running_loop()
             w = await loop.run_in_executor(None, whois.whois, domain)
             return dict(w)
         except Exception as e:

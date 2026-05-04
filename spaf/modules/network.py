@@ -1,4 +1,5 @@
 import asyncio
+import os
 import aiohttp
 import xml.etree.ElementTree as ET
 from typing import Any, Dict, List
@@ -8,6 +9,25 @@ from rich.progress import Progress
 from spaf.core.engine import BaseModule
 from spaf.utils.risk import build_finding
 from spaf.utils.logger import logger
+
+# ---------------------------------------------------------------------------
+# NVD API rate limiting
+# Public:  5 req / 30 s  → 1 req every 6.5 s (conservative)
+# API key: 50 req / 30 s → 1 req every 0.65 s
+# Set NIST_API_KEY in .env to increase throughput.
+# ---------------------------------------------------------------------------
+_NVD_API_KEY   = os.getenv("NIST_API_KEY", "")
+_NVD_REQ_DELAY = 0.65 if _NVD_API_KEY else 6.5   # seconds between NVD requests
+# Semaphore created lazily inside the first coroutine that needs it
+_nvd_semaphore: asyncio.Semaphore | None = None
+
+
+def _get_nvd_semaphore() -> asyncio.Semaphore:
+    """Return (and lazily create) the module-level NVD semaphore."""
+    global _nvd_semaphore
+    if _nvd_semaphore is None:
+        _nvd_semaphore = asyncio.Semaphore(1)  # one NVD request at a time
+    return _nvd_semaphore
 
 
 class NetworkModule(BaseModule):
@@ -252,21 +272,48 @@ class NetworkModule(BaseModule):
         if product == "unknown" or version == "unknown":
             return []
 
-        query = f"{product} {version}"
-        url   = f"https://services.nvd.nist.gov/rest/json/cves/2.0?keywordSearch={query}"
-
+        query    = f"{product} {version}"
+        url      = f"https://services.nvd.nist.gov/rest/json/cves/2.0?keywordSearch={query}"
+        headers  = {"apiKey": _NVD_API_KEY} if _NVD_API_KEY else {}
         cve_list = []
-        try:
-            async with self.get_session() as session:
-                async with session.get(url, timeout=10, **self.get_request_params()) as resp:
-                    if resp.status == 200:
-                        data = await resp.json()
-                        for v in data.get("vulnerabilities", [])[:5]:
-                            cve_id = v.get("cve", {}).get("id")
-                            if cve_id:
-                                cve_list.append(cve_id)
-        except Exception as e:
-            logger.error(f"CVE Lookup failed: {e}")
+
+        async with _get_nvd_semaphore():
+            try:
+                async with self.get_session() as session:
+                    async with session.get(
+                        url, timeout=15, headers=headers, **self.get_request_params()
+                    ) as resp:
+                        if resp.status == 429:
+                            logger.warning(
+                                "NVD API rate limit hit — sleeping 30 s then retrying. "
+                                "Set NIST_API_KEY in .env for higher throughput."
+                            )
+                            await asyncio.sleep(30)
+                            # Single retry after backoff
+                            async with session.get(
+                                url, timeout=15, headers=headers, **self.get_request_params()
+                            ) as retry_resp:
+                                if retry_resp.status == 200:
+                                    data = await retry_resp.json()
+                                    for v in data.get("vulnerabilities", [])[:5]:
+                                        cve_id = v.get("cve", {}).get("id")
+                                        if cve_id:
+                                            cve_list.append(cve_id)
+                        elif resp.status == 200:
+                            data = await resp.json()
+                            for v in data.get("vulnerabilities", [])[:5]:
+                                cve_id = v.get("cve", {}).get("id")
+                                if cve_id:
+                                    cve_list.append(cve_id)
+                        else:
+                            logger.debug(f"NVD returned HTTP {resp.status} for '{query}'")
+            except Exception as e:
+                logger.error(f"CVE Lookup failed: {e}")
+            finally:
+                # Enforce delay AFTER releasing the semaphore so other callers
+                # wait the full window before their own request.
+                await asyncio.sleep(_NVD_REQ_DELAY)
+
         return cve_list
 
     def render_results(self, results: List[Dict[str, Any]]):

@@ -89,6 +89,45 @@ def chat(
             
     asyncio.run(run())
 
+
+@app.command(name="test-ai")
+def test_ai():
+    """Test the configured AI provider connection and print a health report."""
+    from rich.table import Table
+
+    async def run():
+        console.print(f"\n[bold cyan]Testing AI provider:[/bold cyan] [white]{ai_orchestrator.provider.upper()}[/white]\n")
+        with console.status("[bold cyan]Connecting to AI provider...[/bold cyan]", spinner="dots"):
+            result = await ai_orchestrator.health_check()
+
+        status_color = "green" if "OK" in result["status"] else "red"
+
+        table = Table(title="AI Provider Health Check", show_header=True, header_style="bold white")
+        table.add_column("Field",  style="cyan",  width=16)
+        table.add_column("Value",  style="white")
+
+        table.add_row("Provider", result["provider"].upper())
+        table.add_row("Model",    result["model"])
+        table.add_row("Status",   f"[{status_color}]{result['status']}[/{status_color}]")
+        table.add_row("Response", result["detail"] or "—")
+
+        console.print(table)
+
+        if "FAIL" in result["status"]:
+            console.print(
+                "\n[bold yellow]Tip:[/bold yellow] Check your .env file. "
+                "Required variables per provider:\n"
+                "  google    → GOOGLE_API_KEY\n"
+                "  claude    → ANTHROPIC_API_KEY\n"
+                "  ollama    → OLLAMA_URL (default: http://localhost:11434/v1)\n"
+                "             OLLAMA_MODEL (optional, auto-detected)\n"
+                "  lmstudio  → LM_STUDIO_URL (default: http://localhost:1234/v1)\n"
+                "             LM_STUDIO_MODEL (optional, auto-detected)\n"
+            )
+
+    asyncio.run(run())
+
+
 @app.command()
 def gemini(
     query: str = typer.Argument(..., help="Question or prompt for Gemini AI"),

@@ -210,10 +210,11 @@ spaf scan target.com --ports 1-65535 --scanner rustscan   # RustScan — full po
 spaf scan target.com --scanner rustscan --no-ai           # Skip AI analysis
 
 # ─── AI Analysis & Exploitation ──────────────────────────────────
-spaf analyze --id <scan_id>                  # Deep AI analysis of a past scan
-spaf poc <finding_id>                        # Generate exploit script
-spaf remediate <finding_id> --format ansible # Generate fix code
-spaf chat "How do I bypass CSP headers?"     # Direct AI consultation
+# ─── AI Provider setup & testing ────────────────────────────────
+spaf test-ai                                 # Verify AI connection & model
+spaf chat "List open ports attack vectors"   # Direct AI consultation
+spaf ai <scan_id>                            # Re-analyze a past scan (no re-scan)
+spaf ai <scan_id> --provider ollama          # Use Ollama for this analysis only
 
 # ─── Operations ──────────────────────────────────────────────────
 spaf shell                                   # Interactive AI shell
@@ -240,14 +241,51 @@ spaf test-ai                                 # Verify AI connection
 ---
 
 
-## 🤖 AI Provider Comparison
+## 🤖 AI Provider Setup
 
-| Provider | Type | Best For | Privacy |
-| :--- | :---: | :--- | :---: |
-| **Google Gemini 1.5 Pro** | ☁️ Remote | Deepest analysis, best reasoning | Low |
-| **Anthropic Claude 3.5** | ☁️ Remote | Report writing, remediation advice | Low |
-| **Ollama** | 💻 Local | Air-gapped networks, unlimited usage | ✅ High |
-| **LM Studio** | 💻 Local | Private deployments, no data leaves host | ✅ High |
+### Quick Comparison
+
+| Provider | Type | Model | Privacy | Best For |
+| :--- | :---: | :--- | :---: | :--- |
+| **Google Gemini** | ☁️ Remote | `gemini-2.0-flash` | Low | Fastest, largest context |
+| **Anthropic Claude** | ☁️ Remote | `claude-3-5-sonnet-20241022` | Low | Report writing, remediation |
+| **Ollama** | 💻 Local | auto-detected | ✅ High | Air-gapped, unlimited usage |
+| **LM Studio** | 💻 Local | auto-detected | ✅ High | Private, no data leaves host |
+
+### Ollama Setup
+
+```bash
+# 1. Install Ollama → https://ollama.com
+# 2. Pull a model
+ollama pull llama3.2
+ollama pull qwen2.5-coder   # great for exploit/remediation code
+
+# 3. Set in .env
+AI_PROVIDER=ollama
+OLLAMA_URL=http://localhost:11434/v1   # default, change if remote
+OLLAMA_MODEL=llama3.2                  # optional — auto-detected if not set
+
+# 4. Test
+spaf test-ai
+```
+
+### LM Studio Setup
+
+```bash
+# 1. Download LM Studio → https://lmstudio.ai
+# 2. Load any GGUF model in the app
+# 3. Go to: Local Server tab → Start Server
+
+# 4. Set in .env
+AI_PROVIDER=lmstudio
+LM_STUDIO_URL=http://localhost:1234/v1  # default
+LM_STUDIO_MODEL=your-model-name         # optional — auto-detected from loaded model
+
+# 5. Test
+spaf test-ai
+```
+
+> **All AI name variants are accepted:** `lmstudio`, `lm-studio`, `lm_studio` all work as `AI_PROVIDER` values.
 
 ---
 

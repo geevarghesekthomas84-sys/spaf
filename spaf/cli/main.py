@@ -343,16 +343,17 @@ def analyze(
 
 @app.command()
 def recon(
-    target: str = typer.Argument(..., help="Target domain or IP"),
-    passive: bool = typer.Option(True, "--passive/--active", help="Enable passive reconnaissance"),
+    target: str      = typer.Argument(..., help="Target domain or IP"),
+    passive: bool    = typer.Option(True,  "--passive/--active", help="Enable passive reconnaissance"),
     output: Optional[str] = typer.Option(None, "--output", help="Output file for results (JSON)"),
-    no_db: bool = typer.Option(False, "--no-db", help="Run in offline mode without database logging"),
-    delay: float = typer.Option(0.0, "--delay", help="Delay between requests in seconds"),
-    concurrency: int = typer.Option(5, "--concurrency", help="Maximum concurrent requests")
+    no_db: bool      = typer.Option(False, "--no-db",  help="Run in offline mode without database logging"),
+    no_ai: bool      = typer.Option(False, "--no-ai",  help="Skip automatic AI analysis after scan"),
+    delay: float     = typer.Option(0.0,   "--delay",  help="Delay between requests in seconds"),
+    concurrency: int = typer.Option(5,     "--concurrency", help="Maximum concurrent requests")
 ):
     """Perform reconnaissance on one or more targets."""
     targets = load_targets(target)
-    
+
     async def run():
         if not no_db:
             try:
@@ -360,35 +361,36 @@ def recon(
             except ConnectionError:
                 console.print("[bold red]Database Error:[/bold red] Could not connect to MongoDB. Use --no-db for offline mode.")
                 raise typer.Exit(1)
-        
+
         options = {
-            "passive": passive, 
-            "no_db": no_db, 
-            "delay": delay, 
-            "concurrency": concurrency
+            "passive":     passive,
+            "no_db":       no_db,
+            "no_ai":       no_ai,
+            "delay":       delay,
+            "concurrency": concurrency,
         }
-        
-        # Concurrent execution
+
         tasks = [engine.run_module(ReconModule, t, options) for t in targets]
         all_results = await asyncio.gather(*tasks)
-        
+
         if output:
             flat_results = [item for sublist in all_results for item in sublist]
             with open(output, "w") as f:
                 json.dump(flat_results, f, indent=4)
             console.print(f"[green]All results saved to:[/green] {output}")
-    
+
     asyncio.run(run())
 
 @app.command()
 def scan(
     target: str      = typer.Argument(..., help="Target domain or IP"),
-    ports: str       = typer.Option("1-1024",   "--ports",      help="Port range (e.g., 1-65535)"),
-    intensity: str   = typer.Option("normal",   "--intensity",  help="Scan intensity: light|normal|aggressive"),
-    scanner: str     = typer.Option("nmap",     "--scanner",    help="Scanner engine: nmap|rustscan"),
-    ulimit: int      = typer.Option(5000,        "--ulimit",     help="RustScan: open file descriptor limit"),
-    batch_size: int  = typer.Option(2500,        "--batch-size", help="RustScan: ports per batch"),
-    no_db: bool      = typer.Option(False,       "--no-db",      help="Run in offline mode without database logging"),
+    ports: str       = typer.Option("1-1024", "--ports",      help="Port range (e.g., 1-65535)"),
+    intensity: str   = typer.Option("normal", "--intensity",  help="Scan intensity: light|normal|aggressive"),
+    scanner: str     = typer.Option("nmap",   "--scanner",    help="Scanner engine: nmap|rustscan"),
+    ulimit: int      = typer.Option(5000,      "--ulimit",     help="RustScan: open file descriptor limit"),
+    batch_size: int  = typer.Option(2500,      "--batch-size", help="RustScan: ports per batch"),
+    no_db: bool      = typer.Option(False,     "--no-db",      help="Run in offline mode without database logging"),
+    no_ai: bool      = typer.Option(False,     "--no-ai",      help="Skip automatic AI analysis after scan"),
 ):
     """Run a network port scan using Nmap or RustScan on one or more targets."""
     targets = load_targets(target)
@@ -415,6 +417,7 @@ def scan(
             "ulimit":     ulimit,
             "batch_size": batch_size,
             "no_db":      no_db,
+            "no_ai":      no_ai,
         }
         tasks = [engine.run_module(NetworkModule, t, options) for t in targets]
         await asyncio.gather(*tasks)
@@ -424,12 +427,13 @@ def scan(
 
 @app.command()
 def webscan(
-    url: str = typer.Argument(..., help="Target URL (including protocol)"),
-    headers_only: bool = typer.Option(False, "--headers-only", help="Only check security headers"),
-    output: Optional[str] = typer.Option(None, "--output", help="Output file for results (JSON)"),
-    no_db: bool = typer.Option(False, "--no-db", help="Run in offline mode without database logging"),
-    delay: float = typer.Option(0.0, "--delay", help="Delay between requests in seconds"),
-    concurrency: int = typer.Option(5, "--concurrency", help="Maximum concurrent requests")
+    url: str              = typer.Argument(..., help="Target URL (including protocol)"),
+    headers_only: bool    = typer.Option(False, "--headers-only",  help="Only check security headers"),
+    output: Optional[str] = typer.Option(None,  "--output",        help="Output file for results (JSON)"),
+    no_db: bool           = typer.Option(False, "--no-db",         help="Run in offline mode without database logging"),
+    no_ai: bool           = typer.Option(False, "--no-ai",         help="Skip automatic AI analysis after scan"),
+    delay: float          = typer.Option(0.0,   "--delay",         help="Delay between requests in seconds"),
+    concurrency: int      = typer.Option(5,     "--concurrency",   help="Maximum concurrent requests")
 ):
     """Perform a web security assessment on one or more targets."""
     targets = load_targets(url)
@@ -440,12 +444,13 @@ def webscan(
                 await _init_db()
             except ConnectionError:
                 raise typer.Exit(1)
-            
+
         options = {
-            "headers_only": headers_only, 
-            "no_db": no_db,
-            "delay": delay,
-            "concurrency": concurrency
+            "headers_only": headers_only,
+            "no_db":        no_db,
+            "no_ai":        no_ai,
+            "delay":        delay,
+            "concurrency":  concurrency,
         }
         tasks = [engine.run_module(WebscanModule, t, options) for t in targets]
         all_results = await asyncio.gather(*tasks)
@@ -455,16 +460,17 @@ def webscan(
             with open(output, "w") as f:
                 json.dump(flat_results, f, indent=4)
             console.print(f"[green]All results saved to:[/green] {output}")
-    
+
     asyncio.run(run())
 
 @app.command()
 def crawl(
-    url: str = typer.Argument(..., help="Target URL (including protocol)"),
-    depth: int = typer.Option(2, "--depth", help="Maximum crawl depth"),
-    max_pages: int = typer.Option(50, "--max-pages", help="Maximum pages to crawl"),
-    output: Optional[str] = typer.Option(None, "--output", help="Output file for results (JSON)"),
-    no_db: bool = typer.Option(False, "--no-db", help="Run in offline mode")
+    url: str              = typer.Argument(..., help="Target URL (including protocol)"),
+    depth: int            = typer.Option(2,     "--depth",     help="Maximum crawl depth"),
+    max_pages: int        = typer.Option(50,    "--max-pages", help="Maximum pages to crawl"),
+    output: Optional[str] = typer.Option(None,  "--output",    help="Output file for results (JSON)"),
+    no_db: bool           = typer.Option(False, "--no-db",     help="Run in offline mode"),
+    no_ai: bool           = typer.Option(False, "--no-ai",     help="Skip automatic AI analysis after scan"),
 ):
     """Spider a web application and identify interesting endpoints."""
     targets = load_targets(url)
@@ -475,8 +481,13 @@ def crawl(
                 await _init_db()
             except ConnectionError:
                 raise typer.Exit(1)
-            
-        options = {"depth": depth, "max_pages": max_pages, "no_db": no_db}
+
+        options = {
+            "depth":     depth,
+            "max_pages": max_pages,
+            "no_db":     no_db,
+            "no_ai":     no_ai,
+        }
         tasks = [engine.run_module(CrawlerModule, t, options) for t in targets]
         all_results = await asyncio.gather(*tasks)
 
@@ -485,7 +496,7 @@ def crawl(
             with open(output, "w") as f:
                 json.dump(flat_results, f, indent=4)
             console.print(f"[green]All results saved to:[/green] {output}")
-    
+
     asyncio.run(run())
 
 @app.command()

@@ -137,10 +137,31 @@ spaf chat "Write a Python PoC for CVE-2024-xxxx"
 ---
 
 ### `spaf gemini <query>` — Gemini Shortcut
-Dedicated shortcut to query Google Gemini regardless of `AI_PROVIDER` setting.
+Dedicated shortcut to query **Google Gemini** regardless of `AI_PROVIDER` setting.
 
 ```bash
 spaf gemini "Explain CVE-2024-1234"
+spaf gemini "Write an Nmap scan script for internal networks"
+```
+
+---
+
+### `spaf ollama <query>` — Ollama Shortcut
+Dedicated shortcut to query your **locally running Ollama** model regardless of `AI_PROVIDER` setting. Displays the auto-detected or configured model name.
+
+```bash
+spaf ollama "List exploitation paths for open SMB ports"
+spaf ollama "Generate a Python reverse shell"
+```
+
+---
+
+### `spaf lmstudio <query>` — LM Studio Shortcut
+Dedicated shortcut to query the **model currently loaded in LM Studio** regardless of `AI_PROVIDER` setting. LM Studio must have Server mode enabled.
+
+```bash
+spaf lmstudio "Analyze these HTTP headers for security risks"
+spaf lmstudio "Summarize OWASP Top 10 attack techniques"
 ```
 
 ---

@@ -215,6 +215,9 @@ spaf test-ai                                         # Check AI provider
 spaf ai <scan_id>                                    # Re-analyze past scan
 spaf ai <scan_id> --provider ollama                  # Use Ollama for analysis
 spaf chat "How do I bypass a WAF?"                   # Direct AI chat
+spaf gemini "Explain CVE-2024-1234"                  # Google Gemini shortcut
+spaf ollama "List SMB exploitation paths"            # Ollama (local) shortcut
+spaf lmstudio "Analyze these HTTP headers"           # LM Studio (local) shortcut
 spaf poc <finding_id>                                # Generate exploit script
 spaf remediate <finding_id> --format ansible         # Generate fix code
 

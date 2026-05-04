@@ -146,6 +146,45 @@ def gemini(
             
     asyncio.run(run())
 
+
+@app.command()
+def ollama(
+    query: str = typer.Argument(..., help="Question or prompt for Ollama (local AI)"),
+):
+    """Shortcut to chat with a locally running Ollama model."""
+    async def run():
+        old_provider = ai_orchestrator.provider
+        ai_orchestrator.provider = "ollama"
+        try:
+            model = await ai_orchestrator._resolve_ollama_model()
+            with console.status(f"[bold green]Ollama ({model}) is thinking..."):
+                response = await ai_orchestrator.chat(query)
+                console.print(Panel(response, title=f"🦙 Ollama — {model}", border_style="green"))
+        finally:
+            ai_orchestrator.provider = old_provider
+
+    asyncio.run(run())
+
+
+@app.command()
+def lmstudio(
+    query: str = typer.Argument(..., help="Question or prompt for LM Studio (local AI)"),
+):
+    """Shortcut to chat with the currently loaded LM Studio model."""
+    async def run():
+        old_provider = ai_orchestrator.provider
+        ai_orchestrator.provider = "lmstudio"
+        try:
+            model = await ai_orchestrator._resolve_lmstudio_model()
+            with console.status(f"[bold yellow]LM Studio ({model}) is thinking..."):
+                response = await ai_orchestrator.chat(query)
+                console.print(Panel(response, title=f"🖥️  LM Studio — {model}", border_style="yellow"))
+        finally:
+            ai_orchestrator.provider = old_provider
+
+    asyncio.run(run())
+
+
 @app.command()
 def poc(
     finding_id: str = typer.Argument(..., help="The ID of the finding to generate a POC for"),

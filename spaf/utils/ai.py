@@ -407,6 +407,66 @@ class AIOrchestrator:
         """General-purpose AI interaction (`spaf chat`, `spaf shell`, watch alerts)."""
         return await self._call(_SYSTEM_BASE, prompt)
 
+    async def stream_chat(self, prompt: str, console=None) -> str:
+        """
+        Streaming variant of chat() for local providers (Ollama / LM Studio).
+        Prints tokens to console in real-time as they arrive.
+        Falls back to non-streaming for remote providers.
+        Returns the full accumulated response text.
+        """
+        from rich.console import Console as RichConsole
+        _console = console or RichConsole()
+
+        # Remote providers: no streaming — delegate to normal _call()
+        if self.provider in ("google", "claude"):
+            return await self._call(_SYSTEM_BASE, prompt)
+
+        client = (
+            self._ollama_client   if self.provider == "ollama"    else
+            self._lmstudio_client if self.provider == "lmstudio"  else None
+        )
+        if not client:
+            return await self._call(_SYSTEM_BASE, prompt)
+
+        resolve = (
+            self._resolve_ollama_model   if self.provider == "ollama"
+            else self._resolve_lmstudio_model
+        )
+
+        try:
+            model = await resolve()
+            full_text = ""
+            stream = await client.chat.completions.create(
+                model=model,
+                stream=True,
+                messages=[
+                    {"role": "system", "content": _SYSTEM_BASE},
+                    {"role": "user",   "content": prompt},
+                ],
+            )
+            async for chunk in stream:
+                delta = chunk.choices[0].delta.content or ""
+                full_text += delta
+                _console.print(delta, end="", markup=False, highlight=False)
+            _console.print()   # newline after stream ends
+            return full_text
+
+        except OAIConnectionError:
+            base = self.ollama_url if self.provider == "ollama" else self.lm_studio_url
+            msg = (
+                f"\n⚠️  Cannot connect to {self.provider} at {base}.\n"
+                f"Make sure {'Ollama is running (ollama serve)' if self.provider == 'ollama' else 'LM Studio Server is enabled'}."
+            )
+            _console.print(msg)
+            return msg
+        except asyncio.TimeoutError:
+            msg = f"\n⚠️  {self.provider} timed out. The model may still be loading."
+            _console.print(msg)
+            return msg
+        except Exception as exc:
+            logger.error(f"Streaming failed [{self.provider}]: {exc}")
+            return await self._call(_SYSTEM_BASE, prompt)  # graceful fallback
+
     async def analyze_findings(self, findings: list) -> str:
         """Full Red Team assessment report from a raw findings list (`spaf analyze`)."""
         prompt = f"""

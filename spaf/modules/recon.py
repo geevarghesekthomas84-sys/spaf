@@ -1,6 +1,7 @@
 import asyncio
-import aiohttp
+import os
 import socket
+import aiohttp
 import dns.resolver
 import dns.zone
 import dns.query
@@ -12,6 +13,13 @@ from rich.progress import Progress
 from spaf.core.engine import BaseModule
 from spaf.utils.risk import build_finding
 from spaf.utils.logger import logger
+
+# Optional Shodan integration (pip install shodan)
+try:
+    import shodan as shodan_lib
+except ImportError:
+    shodan_lib = None
+
 
 class ReconModule(BaseModule):
     COMMON_SUBDOMAINS = ["dev", "staging", "test", "prod", "vpn", "admin", "mail", "remote", "api", "git", "cloud", "portal"]
@@ -58,7 +66,15 @@ class ReconModule(BaseModule):
         if not is_passive and dns_records.get("NS"):
             progress.update(task, description="[cyan]Attempting DNS zone transfer (AXFR)...", completed=95)
             findings.extend(await self._attempt_zone_transfer(domain, dns_records["NS"]))
-        
+
+        # 7. Shodan passive lookup (no direct contact with target)
+        shodan_key = os.getenv("SHODAN_API_KEY")
+        if shodan_key and shodan_lib:
+            progress.update(task, description="[cyan]Fetching Shodan intelligence...", completed=97)
+            findings.extend(await self._get_shodan_info(domain, shodan_key))
+        elif shodan_key and not shodan_lib:
+            logger.warning("SHODAN_API_KEY set but 'shodan' package not installed. Run: pip install shodan")
+
         if len(resolved_subs) > 20:
             findings.append(build_finding(
                 domain, "large_subdomain_attack_surface",
@@ -202,3 +218,40 @@ class ReconModule(BaseModule):
             table.add_row(r['vuln_type'], f"[{color}]{sev}[/{color}]", r['detail'])
 
         self.console.print(table)
+
+    async def _get_shodan_info(self, domain: str, api_key: str) -> List[Dict[str, Any]]:
+        """
+        Passive Shodan lookup — resolves domain → IP and queries Shodan's
+        Internet DB. No packets are sent to the target.
+        Requires: pip install shodan  +  SHODAN_API_KEY in .env
+        """
+        findings = []
+        try:
+            loop    = asyncio.get_running_loop()
+            api     = shodan_lib.Shodan(api_key)
+            ip_addr = socket.gethostbyname(domain)
+
+            host = await loop.run_in_executor(None, api.host, ip_addr)
+
+            ports = host.get("ports", [])
+            org   = host.get("org", "Unknown")
+            isp   = host.get("isp", "Unknown")
+            country = host.get("country_name", "Unknown")
+
+            if ports:
+                findings.append(build_finding(
+                    domain, "shodan_open_ports",
+                    f"Shodan reports {len(ports)} open ports on {ip_addr} ({org}): {sorted(ports)}. "
+                    f"ISP: {isp}, Country: {country}.",
+                    "Medium",
+                    "Validate that all open ports are intentional. Close or firewall any unneeded services.",
+                    "recon",
+                    extra={"ip": ip_addr, "ports": ports, "org": org, "isp": isp, "country": country},
+                ))
+            logger.debug(f"Shodan: {ip_addr} — {len(ports)} ports, org={org}")
+
+        except Exception as exc:
+            logger.warning(f"Shodan lookup failed for {domain}: {exc}")
+
+        return findings
+

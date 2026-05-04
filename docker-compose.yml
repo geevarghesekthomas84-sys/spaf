@@ -1,21 +1,45 @@
-version: '3.8'
+version: '3.9'
 
 services:
-  spaf:
-    build: .
-    volumes:
-      - .:/app
-    environment:
-      - MONGO_URI=mongodb://mongodb:27017
-    depends_on:
-      - mongodb
-
-  mongodb:
-    image: mongo:latest
+  # ── MongoDB ─────────────────────────────────────────────────────────────────
+  mongo:
+    image: mongo:7
+    container_name: spaf_mongo
+    restart: unless-stopped
     ports:
       - "27017:27017"
     volumes:
-      - mongodb_data:/data/db
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: spaf
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── SPAF CLI ─────────────────────────────────────────────────────────────────
+  spaf:
+    build: .
+    container_name: spaf
+    restart: "no"          # CLI tool — don't restart after it exits
+    depends_on:
+      mongo:
+        condition: service_healthy
+    volumes:
+      - .:/app             # live-reload source during development
+      - ./.env:/app/.env   # inject secrets from host .env
+      - ./reports:/app/reports
+      - ./scope.json:/app/scope.json
+    environment:
+      SPAF_MONGO_URI: mongodb://mongo:27017
+      PYTHONUNBUFFERED: "1"
+    # Default: drop into interactive shell
+    # Override per-run: docker-compose run spaf recon target.com
+    command: shell
+    stdin_open: true
+    tty: true
+    network_mode: host      # gives nmap/rustscan access to real network interfaces
 
 volumes:
-  mongodb_data:
+  mongo_data:

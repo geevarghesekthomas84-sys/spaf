@@ -27,7 +27,8 @@ from rich.panel import Panel
 
 app = typer.Typer(
     help="Smart Pentesting Automation Framework (SPAF) - AI-Augmented Offensive Security Framework. Developed by gg",
-    rich_markup_mode="rich"
+    rich_markup_mode="rich",
+    add_completion=True,    # enables: spaf --install-completion / --show-completion
 )
 console = Console()
 engine = ScanEngine()
@@ -151,15 +152,14 @@ def gemini(
 def ollama(
     query: str = typer.Argument(..., help="Question or prompt for Ollama (local AI)"),
 ):
-    """Shortcut to chat with a locally running Ollama model."""
+    """Shortcut to chat with a locally running Ollama model (streaming output)."""
     async def run():
         old_provider = ai_orchestrator.provider
         ai_orchestrator.provider = "ollama"
         try:
             model = await ai_orchestrator._resolve_ollama_model()
-            with console.status(f"[bold green]Ollama ({model}) is thinking..."):
-                response = await ai_orchestrator.chat(query)
-                console.print(Panel(response, title=f"🦙 Ollama — {model}", border_style="green"))
+            console.print(f"\n[bold green]🦙 Ollama — {model}[/bold green]\n")
+            await ai_orchestrator.stream_chat(query, console=console)
         finally:
             ai_orchestrator.provider = old_provider
 
@@ -170,15 +170,32 @@ def ollama(
 def lmstudio(
     query: str = typer.Argument(..., help="Question or prompt for LM Studio (local AI)"),
 ):
-    """Shortcut to chat with the currently loaded LM Studio model."""
+    """Shortcut to chat with the currently loaded LM Studio model (streaming output)."""
     async def run():
         old_provider = ai_orchestrator.provider
         ai_orchestrator.provider = "lmstudio"
         try:
             model = await ai_orchestrator._resolve_lmstudio_model()
-            with console.status(f"[bold yellow]LM Studio ({model}) is thinking..."):
+            console.print(f"\n[bold yellow]🖥️  LM Studio — {model}[/bold yellow]\n")
+            await ai_orchestrator.stream_chat(query, console=console)
+        finally:
+            ai_orchestrator.provider = old_provider
+
+    asyncio.run(run())
+
+
+@app.command()
+def claude(
+    query: str = typer.Argument(..., help="Question or prompt for Anthropic Claude"),
+):
+    """Shortcut to chat specifically with Anthropic Claude."""
+    async def run():
+        old_provider = ai_orchestrator.provider
+        ai_orchestrator.provider = "claude"
+        try:
+            with console.status("[bold magenta]Claude is thinking..."):
                 response = await ai_orchestrator.chat(query)
-                console.print(Panel(response, title=f"🖥️  LM Studio — {model}", border_style="yellow"))
+            console.print(Panel(response, title="🤖 Anthropic Claude", border_style="magenta"))
         finally:
             ai_orchestrator.provider = old_provider
 
@@ -749,6 +766,199 @@ def history(
 
     asyncio.run(run())
 
+# ─────────────────────────────────────────────────────────────────────────────
+# EXPORT
+# ─────────────────────────────────────────────────────────────────────────────
+@app.command()
+def export(
+    target: str = typer.Argument(..., help="Target domain/IP to export findings for"),
+    format: str = typer.Option("csv",  "--format", help="Output format: csv | json"),
+    output: str = typer.Option("",     "--output", help="Output file path (default: <target>_findings.<ext>)"),
+):
+    """Export all findings for a target to CSV or JSON for client deliverables."""
+    import csv
+
+    async def run():
+        await _init_db()
+        findings = await db.get_all_vulnerabilities_for_export(target)
+        if not findings:
+            console.print(f"[yellow]No findings found for target:[/yellow] {target}")
+            return
+
+        fmt   = format.lower()
+        fname = output or f"{target.replace('.', '_')}_findings.{fmt}"
+
+        # Sanitise ObjectId / datetime for serialisation
+        clean = []
+        for f in findings:
+            row = {k: str(v) for k, v in f.items()}
+            clean.append(row)
+
+        if fmt == "json":
+            with open(fname, "w", encoding="utf-8") as fh:
+                json.dump(clean, fh, indent=2)
+        elif fmt == "csv":
+            if clean:
+                fieldnames = list(clean[0].keys())
+                with open(fname, "w", newline="", encoding="utf-8") as fh:
+                    writer = csv.DictWriter(fh, fieldnames=fieldnames)
+                    writer.writeheader()
+                    writer.writerows(clean)
+        else:
+            console.print(f"[red]Unknown format:[/red] {fmt}. Use 'csv' or 'json'.")
+            return
+
+        console.print(f"[bold green]✅ Exported {len(clean)} findings → {fname}[/bold green]")
+
+    asyncio.run(run())
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# DIFF
+# ─────────────────────────────────────────────────────────────────────────────
+@app.command()
+def diff(
+    scan_a: str = typer.Argument(..., help="Older scan ID"),
+    scan_b: str = typer.Argument(..., help="Newer scan ID"),
+):
+    """Compare two scans and show new, fixed, and unchanged findings."""
+    async def run():
+        await _init_db()
+
+        meta_a = await db.get_scan_meta(scan_a)
+        meta_b = await db.get_scan_meta(scan_b)
+
+        if not meta_a:
+            console.print(f"[red]Scan not found:[/red] {scan_a}"); return
+        if not meta_b:
+            console.print(f"[red]Scan not found:[/red] {scan_b}"); return
+
+        findings_a = await db.get_vulnerabilities_for_scan(scan_a)
+        findings_b = await db.get_vulnerabilities_for_scan(scan_b)
+
+        keys_a = {f["vuln_type"] for f in findings_a}
+        keys_b = {f["vuln_type"] for f in findings_b}
+
+        new_vulns   = keys_b - keys_a
+        fixed_vulns = keys_a - keys_b
+        same_vulns  = keys_a & keys_b
+
+        def ts(meta):
+            return meta.get("started_at", "").strftime("%Y-%m-%d %H:%M") if hasattr(meta.get("started_at"), "strftime") else str(meta.get("started_at", ""))
+
+        console.print(f"\n[bold]Scan Diff[/bold]  [dim]{ts(meta_a)}[/dim] → [dim]{ts(meta_b)}[/dim]")
+        console.print(f"Target: [cyan]{meta_a.get('target')}[/cyan]\n")
+
+        if new_vulns:
+            t = Table(title=f"🆕 New Findings ({len(new_vulns)})", border_style="red")
+            t.add_column("vuln_type", style="red")
+            for k in sorted(new_vulns): t.add_row(k)
+            console.print(t)
+
+        if fixed_vulns:
+            t = Table(title=f"✅ Fixed / Resolved ({len(fixed_vulns)})", border_style="green")
+            t.add_column("vuln_type", style="green")
+            for k in sorted(fixed_vulns): t.add_row(k)
+            console.print(t)
+
+        console.print(f"[dim]Unchanged: {len(same_vulns)} findings[/dim]")
+
+    asyncio.run(run())
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SCOPE
+# ─────────────────────────────────────────────────────────────────────────────
+@app.command()
+def scope(
+    action: str = typer.Argument(..., help="Action: show | add | remove"),
+    value:  str = typer.Argument("",  help="Domain/IP/CIDR to add or remove"),
+    scope_file: str = typer.Option("scope.json", "--file", help="Scope config file path"),
+):
+    """
+    Manage engagement scope (in-scope targets and exclusions).
+
+    \b
+    spaf scope show
+    spaf scope add target.com
+    spaf scope remove target.com
+    """
+    import json as _json
+
+    def load_scope(path: str) -> dict:
+        if os.path.exists(path):
+            with open(path) as fh:
+                return _json.load(fh)
+        return {"in_scope": [], "out_of_scope": []}
+
+    def save_scope(path: str, data: dict):
+        with open(path, "w") as fh:
+            _json.dump(data, fh, indent=2)
+
+    data = load_scope(scope_file)
+    act  = action.lower()
+
+    if act == "show":
+        t = Table(title=f"Engagement Scope ({scope_file})", show_header=True)
+        t.add_column("In Scope",  style="green")
+        t.add_column("Out of Scope", style="red")
+        rows = max(len(data["in_scope"]), len(data["out_of_scope"]))
+        for i in range(rows):
+            t.add_row(
+                data["in_scope"][i]     if i < len(data["in_scope"])     else "",
+                data["out_of_scope"][i] if i < len(data["out_of_scope"]) else "",
+            )
+        console.print(t)
+
+    elif act == "add":
+        if not value:
+            console.print("[red]Provide a value to add.[/red]"); return
+        if value not in data["in_scope"]:
+            data["in_scope"].append(value)
+            save_scope(scope_file, data)
+        console.print(f"[green]Added to scope:[/green] {value}")
+
+    elif act == "remove":
+        if value in data["in_scope"]:
+            data["in_scope"].remove(value)
+            save_scope(scope_file, data)
+            console.print(f"[yellow]Removed from scope:[/yellow] {value}")
+        else:
+            console.print(f"[dim]{value} not found in scope.[/dim]")
+    else:
+        console.print(f"[red]Unknown action:[/red] {act}. Use: show | add | remove")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# UPDATE
+# ─────────────────────────────────────────────────────────────────────────────
+@app.command()
+def update():
+    """Update SPAF to the latest version from PyPI."""
+    import subprocess, sys
+
+    console.print("[bold cyan]Checking for SPAF updates...[/bold cyan]")
+    try:
+        result = subprocess.run(
+            [sys.executable, "-m", "pip", "install", "--upgrade", "spaf"],
+            capture_output=True, text=True
+        )
+        if result.returncode == 0:
+            lines = [l for l in result.stdout.splitlines() if l.strip()]
+            if any("Successfully installed" in l for l in lines):
+                version_line = next((l for l in lines if "spaf" in l.lower()), "")
+                console.print(f"[bold green]✅ SPAF updated successfully![/bold green]  {version_line}")
+            else:
+                console.print("[bold green]✅ SPAF is already up to date.[/bold green]")
+        else:
+            console.print(f"[bold red]Update failed:[/bold red]\n{result.stderr}")
+    except Exception as exc:
+        console.print(f"[bold red]Error running pip:[/bold red] {exc}")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ENTRY POINT
+# ─────────────────────────────────────────────────────────────────────────────
 def entry_point():
     load_plugins(app)
     app()

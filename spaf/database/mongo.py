@@ -33,17 +33,32 @@ class MongoDB:
         """
         Creates necessary indexes for performance and uniqueness.
         """
-        # Unique index on target domain
+        # targets collection
         await self.db.targets.create_index("domain", unique=True)
-        
-        # Compound index on scans for target lookup
+
+        # scans collection
         await self.db.scans.create_index([("target", 1), ("started_at", -1)])
-        
-        # Unique compound index on vulnerabilities to prevent duplicates
+        await self.db.scans.create_index("type")
+        await self.db.scans.create_index("status")
+
+        # vulnerabilities collection
+        # Unique compound — prevents duplicate findings per scan
         await self.db.vulnerabilities.create_index(
             [("scan_id", 1), ("vuln_type", 1), ("target", 1)],
-            unique=True
+            unique=True,
         )
+        # Fast lookups by target across all scans
+        await self.db.vulnerabilities.create_index([("target", 1), ("created_at", -1)])
+        # Severity sort
+        await self.db.vulnerabilities.create_index("severity_order")
+        # Source module filter
+        await self.db.vulnerabilities.create_index("source")
+        # Full-text search across description / vuln_type
+        await self.db.vulnerabilities.create_index(
+            [("vuln_type", "text"), ("description", "text")],
+            name="vuln_text_search",
+        )
+
         logger.debug("Database indexes verified.")
 
     async def upsert_target(self, domain: str, metadata: Optional[Dict[str, Any]] = None):
@@ -200,6 +215,34 @@ class MongoDB:
             return await self.db.vulnerabilities.find_one({"_id": ObjectId(finding_id)})
         except Exception:
             return None
+
+    async def get_all_vulnerabilities_for_export(self, target: str) -> List[Dict[str, Any]]:
+        """
+        Flat list of all latest findings for a target — used by spaf export.
+        Returns deduplicated findings (one per vuln_type), most recent first.
+        """
+        return await self.get_all_vulnerabilities_for_target(target)
+
+    async def get_scan_ids_for_target(self, target: str, limit: int = 50) -> List[str]:
+        """
+        Returns a list of scan_id strings for a target, newest first.
+        Used by spaf diff to validate scan IDs.
+        """
+        cursor = self.db.scans.find(
+            {"target": target}, {"_id": 1}
+        ).sort("started_at", -1).limit(limit)
+        docs = await cursor.to_list(length=limit)
+        return [str(d["_id"]) for d in docs]
+
+    async def get_scan_meta(self, scan_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Returns lightweight scan metadata (target, type, started_at, findings_count).
+        """
+        return await self.db.scans.find_one(
+            {"_id": ObjectId(scan_id)},
+            {"target": 1, "type": 1, "started_at": 1, "findings_count": 1, "status": 1},
+        )
+
 
 # Single instance for the application
 db = MongoDB()

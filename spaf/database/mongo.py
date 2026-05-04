@@ -149,13 +149,16 @@ class MongoDB:
         vuln_dict["scan_id"] = scan_id
         now = datetime.utcnow()
         vuln_dict["updated_at"] = now
-        
+        # Remove created_at from the $set payload to avoid a path conflict
+        # with $setOnInsert when MongoDB processes both operators on the same field.
+        vuln_dict.pop("created_at", None)
+
         filter_query = {
             "scan_id": scan_id,
             "vuln_type": vuln_dict["vuln_type"],
             "target": vuln_dict["target"]
         }
-        
+
         update_data = {
             "$set": vuln_dict,
             "$setOnInsert": {"created_at": now}

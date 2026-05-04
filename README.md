@@ -105,8 +105,9 @@ Deep-dive assessment of web application security posture.
 ### 🔌 Network Intelligence
 High-speed, configurable port scanning with automated threat correlation.
 
-- Nmap integration with `light`, `normal`, `aggressive` profiles
-- Service version detection & fingerprinting
+- **Nmap** integration with `light`, `normal`, `aggressive` profiles
+- **RustScan** turbo-discovery (async TCP) — hand-off to Nmap for deep analysis
+- Service version detection & OS fingerprinting
 - Automated CVE mapping via **NIST NVD API**
 - AI-generated risk scoring and prioritization
 
@@ -146,7 +147,9 @@ pip install -e .
 spaf setup
 ```
 
-> **Requirements:** Python 3.9+, Nmap, MongoDB (local or remote)
+> **Requirements:** Python 3.9+, [Nmap](https://nmap.org), MongoDB (local or remote)
+> 
+> **Optional (recommended):** [RustScan](https://github.com/RustScan/RustScan) — for ultra-fast port discovery before Nmap deep-scanning
 
 ---
 
@@ -185,8 +188,10 @@ spaf webscan https://target.com              # Full web audit
 spaf webscan https://target.com --no-db      # Offline mode
 
 # ─── Network Scanning ────────────────────────────────────────────
-spaf scan target.com                         # Standard port scan
-spaf scan target.com --intensity aggressive  # Deep scan
+spaf scan target.com                                      # Nmap — standard scan
+spaf scan target.com --intensity aggressive               # Nmap — deep/aggressive
+spaf scan target.com --ports 1-65535 --scanner rustscan   # RustScan — full port range
+spaf scan target.com --scanner rustscan --intensity aggressive --ulimit 8000  # RustScan — max power
 
 # ─── AI Analysis & Exploitation ──────────────────────────────────
 spaf analyze --id <scan_id>                  # Red Team AI analysis
@@ -202,7 +207,22 @@ spaf history                                 # View past scans
 spaf test-ai                                 # Verify AI connection
 ```
 
+### `spaf scan` — Flag Reference
+
+| Flag | Default | Values | Description |
+|---|---|---|---|
+| `--scanner` | `nmap` | `nmap` \| `rustscan` | Scanner engine to use |
+| `--ports` | `1-1024` | e.g. `1-65535` | Port range to scan |
+| `--intensity` | `normal` | `light` \| `normal` \| `aggressive` | Nmap timing/depth profile |
+| `--ulimit` | `5000` | integer | RustScan: open file descriptor limit |
+| `--batch-size` | `2500` | integer | RustScan: ports probed per batch |
+| `--no-db` | `false` | flag | Skip MongoDB logging (offline mode) |
+
+> **How RustScan + Nmap works together:**  
+> RustScan performs async TCP mass-connect on all ports at high speed, identifies which are open, then passes those specific ports to Nmap for full service/OS/CVE detection. This gives you the best of both — RustScan's speed + Nmap's intelligence.
+
 ---
+
 
 ## 🤖 AI Provider Comparison
 

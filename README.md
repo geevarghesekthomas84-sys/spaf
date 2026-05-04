@@ -194,51 +194,40 @@ SPAF_MONGO_URI=mongodb://localhost:27017
 
 ## 💻 Usage
 
+> 📖 **Full command reference with all flags and examples → [COMMANDS.md](COMMANDS.md)**
+
 ```bash
 # ─── Reconnaissance ──────────────────────────────────────────────
-spaf recon target.com                        # Passive + active recon
-spaf recon target.com --passive              # Passive only (stealthy)
-
-# ─── Web Security ────────────────────────────────────────────────
-spaf webscan https://target.com              # Full web audit
-spaf webscan https://target.com --no-db      # Offline mode
+spaf recon target.com                                # Recon + AI analysis
+spaf recon target.com --passive --no-ai              # Passive only, no AI
 
 # ─── Network Scanning ────────────────────────────────────────────
-spaf scan target.com                                      # Nmap — standard + AI analysis
-spaf scan target.com --intensity aggressive               # Nmap — deep/aggressive
-spaf scan target.com --ports 1-65535 --scanner rustscan   # RustScan — full port range
-spaf scan target.com --scanner rustscan --no-ai           # Skip AI analysis
+spaf scan target.com                                 # Nmap scan + AI
+spaf scan target.com --scanner rustscan --ports 1-65535  # RustScan → Nmap
+spaf scan target.com --intensity aggressive          # Deep scan
 
-# ─── AI Analysis & Exploitation ──────────────────────────────────
-# ─── AI Provider setup & testing ────────────────────────────────
-spaf test-ai                                 # Verify AI connection & model
-spaf chat "List open ports attack vectors"   # Direct AI consultation
-spaf ai <scan_id>                            # Re-analyze a past scan (no re-scan)
-spaf ai <scan_id> --provider ollama          # Use Ollama for this analysis only
+# ─── Web Security ────────────────────────────────────────────────
+spaf webscan https://target.com                      # Full web audit + AI
+spaf crawl https://target.com --depth 3              # Spider + AI
+
+# ─── AI Tools ────────────────────────────────────────────────────
+spaf test-ai                                         # Check AI provider
+spaf ai <scan_id>                                    # Re-analyze past scan
+spaf ai <scan_id> --provider ollama                  # Use Ollama for analysis
+spaf chat "How do I bypass a WAF?"                   # Direct AI chat
+spaf poc <finding_id>                                # Generate exploit script
+spaf remediate <finding_id> --format ansible         # Generate fix code
 
 # ─── Operations ──────────────────────────────────────────────────
-spaf shell                                   # Interactive AI shell
-spaf watch target.com --interval 3600        # 24/7 shadow monitoring
-spaf report target.com --format html         # Generate HTML report
-spaf history                                 # View past scans
-spaf test-ai                                 # Verify AI connection
+spaf watch target.com --interval 3600 --module webscan   # 24/7 monitoring
+spaf report target.com --format html                 # Premium HTML report
+spaf shell                                           # Interactive AI shell
+spaf history                                         # Past scan records
 ```
 
-### `spaf scan` — Flag Reference
-
-| Flag | Default | Values | Description |
-|---|---|---|---|
-| `--scanner` | `nmap` | `nmap` \| `rustscan` | Scanner engine to use |
-| `--ports` | `1-1024` | e.g. `1-65535` | Port range to scan |
-| `--intensity` | `normal` | `light` \| `normal` \| `aggressive` | Nmap timing/depth profile |
-| `--ulimit` | `5000` | integer | RustScan: open file descriptor limit |
-| `--batch-size` | `2500` | integer | RustScan: ports probed per batch |
-| `--no-db` | `false` | flag | Skip MongoDB logging (offline mode) |
-
-> **How RustScan + Nmap works together:**  
-> RustScan performs async TCP mass-connect on all ports at high speed, identifies which are open, then passes those specific ports to Nmap for full service/OS/CVE detection. This gives you the best of both — RustScan's speed + Nmap's intelligence.
-
 ---
+
+
 
 
 ## 🤖 AI Provider Setup

@@ -32,7 +32,7 @@ from spaf.utils.logger import logger
 
 def _normalise_provider(raw: str) -> str:
     raw = raw.strip().lower().replace("-", "").replace("_", "")
-    if raw in ("lmstudio", "lmstudio"):
+    if raw == "lmstudio":
         return "lmstudio"
     if raw == "claude":
         return "claude"

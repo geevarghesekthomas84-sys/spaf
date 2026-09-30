@@ -17,10 +17,23 @@ dependencies = [
     "python-whois>=0.8.0",
     "pymongo>=4.5.0",
     "python-dotenv>=1.0.0",
+    "beautifulsoup4>=4.12.0",
+    "requests>=2.31.0",
+    "pyyaml>=6.0.0",
 ]
 
-[tool.setuptools]
-packages = ["spaf"]
+[project.optional-dependencies]
+# AI providers and passive-intel integrations (imported lazily / guarded).
+ai = [
+    "google-genai>=1.0.0",
+    "anthropic>=0.10.0",
+    "openai>=1.0.0",
+]
+intel = ["shodan>=1.28.0"]
+dev = ["pytest>=7.4.0", "pytest-asyncio>=0.21.0"]
+
+[tool.setuptools.packages.find]
+include = ["spaf*"]
 
 [project.scripts]
 spaf = "spaf.cli.main:entry_point"

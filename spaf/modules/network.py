@@ -68,11 +68,12 @@ class NetworkModule(BaseModule):
             f"[green]Running Nmap ({intensity}) on {self.target}...", total=100
         )
         try:
-            cmd = f"nmap -oX - {nmap_args} {self.target}"
-            logger.debug(f"Executing: {cmd}")
+            # exec form (argument list, no shell) — target cannot inject commands.
+            cmd = ["nmap", "-oX", "-", *nmap_args, self.target]
+            logger.debug(f"Executing: {' '.join(cmd)}")
 
-            process = await asyncio.create_subprocess_shell(
-                cmd,
+            process = await asyncio.create_subprocess_exec(
+                *cmd,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
@@ -117,17 +118,18 @@ class NetworkModule(BaseModule):
             # RustScan discovers open ports, then invokes Nmap with -p <ports>.
             # Passing -oX - after -- tells Nmap to write XML to stdout,
             # which RustScan forwards to its own stdout.
-            cmd = (
-                f"rustscan -a {self.target} "
-                f"--ulimit {ulimit} "
-                f"--batch-size {batch_size} "
-                f"--range {ports} "
-                f"-- {nmap_args} -oX -"
-            )
-            logger.debug(f"Executing: {cmd}")
+            # exec form (argument list, no shell) — target cannot inject commands.
+            cmd = [
+                "rustscan", "-a", self.target,
+                "--ulimit", str(ulimit),
+                "--batch-size", str(batch_size),
+                "--range", ports,
+                "--", *nmap_args, "-oX", "-",
+            ]
+            logger.debug(f"Executing: {' '.join(cmd)}")
 
-            process = await asyncio.create_subprocess_shell(
-                cmd,
+            process = await asyncio.create_subprocess_exec(
+                *cmd,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
@@ -168,21 +170,21 @@ class NetworkModule(BaseModule):
     # Shared helpers
     # ------------------------------------------------------------------
 
-    def _get_nmap_args(self, intensity: str, ports: str) -> str:
-        """Nmap args with explicit port range (used for standalone Nmap runs)."""
+    def _get_nmap_args(self, intensity: str, ports: str) -> List[str]:
+        """Nmap args (as a list) with explicit port range for standalone runs."""
         profiles = {
-            "light":      f"-T2 -F -p {ports} --open",
-            "normal":     f"-T3 -sV -O -p {ports} --open --osscan-limit",
-            "aggressive": f"-T4 -sV -sC -O -A -p {ports} --open",
+            "light":      ["-T2", "-F", "-p", ports, "--open"],
+            "normal":     ["-T3", "-sV", "-O", "-p", ports, "--open", "--osscan-limit"],
+            "aggressive": ["-T4", "-sV", "-sC", "-O", "-A", "-p", ports, "--open"],
         }
         return profiles.get(intensity, profiles["normal"])
 
-    def _get_nmap_args_for_rustscan(self, intensity: str) -> str:
-        """Nmap args WITHOUT a port range — RustScan injects -p <ports> itself."""
+    def _get_nmap_args_for_rustscan(self, intensity: str) -> List[str]:
+        """Nmap args (as a list) WITHOUT a port range — RustScan injects -p itself."""
         profiles = {
-            "light":      "-T2 --open",
-            "normal":     "-T3 -sV -O --open --osscan-limit",
-            "aggressive": "-T4 -sV -sC -O -A --open",
+            "light":      ["-T2", "--open"],
+            "normal":     ["-T3", "-sV", "-O", "--open", "--osscan-limit"],
+            "aggressive": ["-T4", "-sV", "-sC", "-O", "-A", "--open"],
         }
         return profiles.get(intensity, profiles["normal"])
 

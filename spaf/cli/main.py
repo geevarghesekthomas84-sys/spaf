@@ -574,6 +574,15 @@ def scan(
         console.print("[bold red]Error:[/bold red] Scanner must be nmap or rustscan.")
         raise typer.Exit(1)
 
+    # Validate every target (defense-in-depth: these are passed to external binaries).
+    valid_targets = [t for t in targets if validate_target(sanitize_domain(t))]
+    for bad in [t for t in targets if t not in valid_targets]:
+        console.print(f"[bold red]Skipping invalid target:[/bold red] {bad}")
+    targets = valid_targets
+    if not targets:
+        console.print("[bold red]Error:[/bold red] No valid targets to scan.")
+        raise typer.Exit(1)
+
     async def run():
         if not no_db:
             try:

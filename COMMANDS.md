@@ -395,7 +395,7 @@ spaf watch target.com --no-db                      # No database logging
 | Flag | Default | Description |
 |---|---|---|
 | `--interval <seconds>` | `3600` | Seconds between scans |
-| `--module` | `recon` | Module to run: `recon` \| `webscan` \| `network` \| `crawl` |
+| `--module` | `recon` | Module to run: `recon` \| `webscan` \| `network` \| `crawl` \| `toolkit` |
 | `--no-ai` | off | Skip AI alert summaries |
 | `--no-db` | off | Run without MongoDB logging |
 
@@ -532,6 +532,12 @@ spaf scan target.com --intensity aggressive --scanner rustscan --ports 1-65535
 spaf crawl https://target.com --depth 3
 spaf report target.com --format html
 spaf export target.com --format csv          # Client deliverable
+
+# ── External recon toolkit pipeline ───────────────────────────────
+spaf tools                                   # Check which recon binaries are installed
+spaf toolkit target.com                      # subfinder→httpx→katana→nuclei chain
+spaf toolkit target.com --no-nuclei          # Attack-surface mapping only (no active scan)
+spaf toolkit target.com --fuzz --wordlist /usr/share/wordlists/common.txt
 
 # ── Offline / air-gapped (Ollama, no DB) ─────────────────────────
 AI_PROVIDER=ollama spaf scan target.com --no-db

@@ -100,6 +100,7 @@ Build a complete attack surface map before firing a single payload.
 - DNS Record audit: SPF, DMARC, AXFR zone transfer
 - WHOIS registrant email exposure analysis
 - **Shodan passive IP intelligence** (optional)
+- **External recon toolkit** (`spaf toolkit`) — chains `subfinder`, `assetfinder`, `dnsx`, `httpx`, `katana`, `hakrawler`, `waybackurls`, `gau`, `ffuf` & `nuclei` into one pipeline (run `spaf tools` to check installs)
 
 </td>
 <td valign="top" width="50%">
@@ -135,6 +136,27 @@ Generate executive-grade deliverables.
 - 📄 **Structured JSON** output for pipelines
 - 📋 **CSV Export** (`spaf export`) for client-ready spreadsheets
 - 🔍 **Scan Diff** (`spaf diff`) — compare any two scans visually
+
+</td>
+</tr>
+<tr>
+<td valign="top" width="100%" colspan="2">
+
+### 🧰 External Recon Toolkit
+Chain a suite of best-in-class open-source recon binaries into a single pipeline with `spaf toolkit`. Each stage feeds the next, and every tool is **optional** — missing binaries are skipped gracefully (check status with `spaf tools`).
+
+```
+subfinder / assetfinder  →  dnsx  →  httpx  →  katana / hakrawler
+                                             →  waybackurls / gau  →  ffuf  →  nuclei
+```
+
+| Tool | Role | Tool | Role |
+|---|---|---|---|
+| `subfinder` | Passive subdomain enum | `waybackurls` | Wayback URL harvesting |
+| `assetfinder` | Passive asset discovery | `gau` | getallurls historical fetch |
+| `dnsx` | Fast DNS resolution | `ffuf` | Content / directory fuzzing |
+| `httpx` | HTTP probing & fingerprinting | `nuclei` | Template-based vuln scanning |
+| `katana` | Next-gen crawling | `hakrawler` | Fast endpoint crawler |
 
 </td>
 </tr>
@@ -250,6 +272,13 @@ spaf scan target.com --intensity aggressive          # Deep scan (-sV -sC -O -A)
 # ─── Web Security ────────────────────────────────────────────────
 spaf webscan https://target.com                      # Full web audit + AI
 spaf crawl https://target.com --depth 3              # Spider + AI
+
+# ─── External Recon Toolkit ──────────────────────────────────────
+spaf tools                                           # Show which recon tools are installed
+spaf toolkit target.com                              # Full pipeline: subfinder→httpx→katana→nuclei
+spaf toolkit target.com --no-nuclei --no-crawl       # Passive recon only (no active scan)
+spaf toolkit target.com --fuzz --wordlist wl.txt     # Add ffuf content fuzzing
+spaf toolkit target.com --nuclei-severity critical,high --output recon.json
 
 # ─── AI Provider Shortcuts (all context-safe) ────────────────────
 spaf test-ai                                         # Health check + status table

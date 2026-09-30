@@ -6,6 +6,27 @@ All notable changes to SPAF are documented here. The format is based on
 ## [Unreleased]
 
 ### Added
+- **PyPI release workflow** — pushing a `vX.Y.Z` tag builds and publishes to PyPI
+  via Trusted Publishing (OIDC, no token secret). Enriched package metadata
+  (authors, license, classifiers, URLs) for the PyPI listing.
+- **nuclei URL-corpus chaining** — the toolkit now feeds crawled + historical
+  URLs (in-scope only) into nuclei alongside probed hosts, with a new
+  `--nuclei-dast` flag for fuzzing templates and a URL cap.
+- **Structured reports** — HTML reports gain a severity-distribution chart, a
+  per-module breakdown, and an optional embedded AI analysis (`spaf report
+  --with-ai`); JSON reports gain `summary`, `by_module`, and `ai_analysis`.
+- **`spaf tools --install`** — installs the Go-based recon suite via `go install`
+  (with `--force` to reinstall all).
+- Demo walkthrough script (`scripts/demo.sh`) + recording recipe (`docs/demo.md`)
+  and a README demo section.
+
+### Fixed
+- **Security:** HTML reports interpolated attacker-controlled finding data
+  (server headers, titles, URLs) into the page without escaping — an
+  HTML/script-injection vector in generated reports. All fields are now escaped,
+  and the AI markdown renderer escapes before formatting.
+
+### Added (earlier this cycle)
 - **External recon toolkit** (`spaf toolkit`) — a chained pipeline wrapping
   `subfinder`, `assetfinder`, `dnsx`, `httpx`, `katana`, `hakrawler`,
   `waybackurls`, `gau`, `ffuf`, and `nuclei`. Each stage feeds the next and every

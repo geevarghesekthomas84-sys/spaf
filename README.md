@@ -165,6 +165,22 @@ subfinder / assetfinder  →  dnsx  →  httpx  →  katana / hakrawler
 
 ---
 
+## 🎬 Demo
+
+A 60-second tour — safe to run offline against `example.com`:
+
+```bash
+spaf tools                       # see which recon binaries are installed
+spaf tools --install             # install the Go recon suite (requires Go)
+spaf scope add example.com       # define engagement scope
+spaf toolkit example.com         # subfinder → httpx → katana → nuclei pipeline
+spaf report example.com --format html --with-ai   # shareable HTML report + AI analysis
+```
+
+> ▶️ Generate a walkthrough GIF for your fork with [`scripts/demo.sh`](scripts/demo.sh) — recipe in [`docs/demo.md`](docs/demo.md).
+
+---
+
 ## 🚀 Installation
 
 ```bash

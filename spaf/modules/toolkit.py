@@ -52,6 +52,20 @@ TOOL_REGISTRY: Dict[str, Dict[str, str]] = {
     "nuclei":      {"role": "Template-based vulnerability scan",  "url": "https://github.com/projectdiscovery/nuclei"},
 }
 
+# `go install` specifications for the Go-based tools (used by `spaf tools --install`).
+GO_INSTALL: Dict[str, str] = {
+    "subfinder":   "github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest",
+    "httpx":       "github.com/projectdiscovery/httpx/cmd/httpx@latest",
+    "nuclei":      "github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest",
+    "katana":      "github.com/projectdiscovery/katana/cmd/katana@latest",
+    "dnsx":        "github.com/projectdiscovery/dnsx/cmd/dnsx@latest",
+    "assetfinder": "github.com/tomnomnom/assetfinder@latest",
+    "waybackurls": "github.com/tomnomnom/waybackurls@latest",
+    "hakrawler":   "github.com/hakluke/hakrawler@latest",
+    "gau":         "github.com/lc/gau/v2/cmd/gau@latest",
+    "ffuf":        "github.com/ffuf/ffuf/v2@latest",
+}
+
 # Map nuclei severities onto SPAF severities.
 _NUCLEI_SEVERITY = {
     "critical": "Critical",
@@ -172,7 +186,14 @@ class ToolkitModule(BaseModule):
         # ── Stage 7: nuclei vulnerability scanning ────────────────────────
         if do_nuclei:
             progress.update(task, description="[cyan]Scanning for vulnerabilities (nuclei)...")
-            findings.extend(await self._nuclei(domain, live_urls))
+            # Feed nuclei the probed live hosts PLUS the crawled/historical URL
+            # corpus (in-scope only) so DAST/fuzzing templates reach real
+            # endpoints, not just site roots. Capped to keep scans bounded.
+            scope = self.options.get("scope")
+            corpus = [u for u in url_corpus if not scope or is_in_scope(u, scope)]
+            cap = self.options.get("nuclei_url_cap", 2000)
+            targets = list(dict.fromkeys([*live_urls, *sorted(corpus)]))[:cap]
+            findings.extend(await self._nuclei(domain, targets))
         progress.update(task, completed=100)
 
         return findings
@@ -326,14 +347,20 @@ class ToolkitModule(BaseModule):
             ))
         return findings
 
-    async def _nuclei(self, domain: str, live_urls: List[str]) -> List[Dict[str, Any]]:
+    async def _nuclei(self, domain: str, targets: List[str]) -> List[Dict[str, Any]]:
         findings: List[Dict[str, Any]] = []
         if not self._available("nuclei"):
             return [self._missing_tool_finding(domain, "nuclei")]
+        if not targets:
+            return findings
 
         severity = self.options.get("nuclei_severity", "critical,high,medium")
         cmd = ["nuclei", "-silent", "-jsonl", "-severity", severity]
-        out = await self._run_tool_stdin("nuclei", cmd, "\n".join(live_urls))
+        # DAST mode runs fuzzing templates against the URL corpus (query params,
+        # paths) — the workflow that finds injection on real endpoints.
+        if self.options.get("nuclei_dast"):
+            cmd.append("-dast")
+        out = await self._run_tool_stdin("nuclei", cmd, "\n".join(targets))
 
         for line in out:
             line = line.strip()

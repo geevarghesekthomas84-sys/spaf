@@ -147,6 +147,7 @@ spaf toolkit target.com --output recon.json --no-ai
 | `--wordlist <file>` | — | Wordlist for ffuf |
 | `--depth <n>` | `2` | Crawl depth for katana |
 | `--nuclei-severity <list>` | `critical,high,medium` | Comma-separated nuclei severities |
+| `--nuclei-dast` | off | Run nuclei DAST/fuzzing templates against the crawled URL corpus |
 | `--scope-file <file>` | `scope.json` | Engagement scope consulted before active scanning |
 | `--ignore-scope` | off | Disable scope enforcement (dangerous) |
 | `--output <file>` | — | Save results as JSON |
@@ -167,8 +168,15 @@ Lists every external recon binary SPAF integrates and shows whether each is
 installed on your system, with install sources for any that are missing.
 
 ```bash
-spaf tools
+spaf tools                 # list install status
+spaf tools --install       # install missing Go-based tools via 'go install' (needs Go)
+spaf tools --install --force   # reinstall all tools
 ```
+
+| Flag | Description |
+|---|---|
+| `--install` | Install missing recon tools via `go install` |
+| `--force` | With `--install`, (re)install every tool, not just missing ones |
 
 | Tool | Role |
 |---|---|
@@ -375,15 +383,24 @@ Unchanged: 5 findings
 
 ### `spaf report <target>` — Generate HTML/JSON Report
 
+The HTML report includes a severity-distribution chart, a per-module breakdown,
+and (with `--with-ai`) an embedded AI threat-intelligence analysis. All finding
+data is HTML-escaped.
+
 ```bash
 spaf report target.com --format html           # Dark-mode HTML dashboard
 spaf report target.com --format json           # Structured JSON export
 spaf report target.com --format both           # Both simultaneously
+spaf report target.com --with-ai               # Embed AI threat analysis
+spaf report --from-file findings.json          # Report from a saved JSON file
 ```
 
 | Flag | Default | Description |
 |---|---|---|
-| `--format` | `html` | Output: `html` \| `json` \| `both` |
+| `--format` | `both` | Output: `html` \| `json` \| `both` |
+| `--with-ai` | off | Embed an AI threat-intelligence analysis in the report |
+| `--output-dir <dir>` | `./reports` | Directory to save reports |
+| `--from-file <file>` | — | Build the report from a local JSON results file |
 
 ---
 

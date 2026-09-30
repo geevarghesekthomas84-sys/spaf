@@ -678,6 +678,7 @@ def toolkit(
     wordlist: Optional[str] = typer.Option(None, "--wordlist", help="Wordlist path for ffuf content fuzzing"),
     depth: int            = typer.Option(2,     "--depth",     help="Crawl depth for katana"),
     nuclei_severity: str  = typer.Option("critical,high,medium", "--nuclei-severity", help="Comma-separated nuclei severities"),
+    nuclei_dast: bool     = typer.Option(False, "--nuclei-dast", help="Run nuclei DAST/fuzzing templates against the crawled URL corpus"),
     scope_file: str       = typer.Option("scope.json", "--scope-file", help="Engagement scope file consulted before active scanning"),
     ignore_scope: bool    = typer.Option(False, "--ignore-scope", help="Skip engagement-scope enforcement (dangerous)"),
     output: Optional[str] = typer.Option(None,  "--output",    help="Output file for results (JSON)"),
@@ -731,6 +732,7 @@ def toolkit(
             "wordlist":        wordlist,
             "depth":           depth,
             "nuclei_severity": nuclei_severity,
+            "nuclei_dast":     nuclei_dast,
             "scope":           scope_data,
             "no_db":           no_db,
             "no_ai":           no_ai,
@@ -748,25 +750,34 @@ def toolkit(
 
 
 @app.command()
-def tools():
-    """List the external recon binaries SPAF integrates and whether each is installed."""
+def tools(
+    install: bool = typer.Option(False, "--install", help="Install missing Go-based recon tools via 'go install'"),
+    force: bool = typer.Option(False, "--force", help="With --install, (re)install every tool, not just missing ones"),
+):
+    """List — and optionally install — the external recon binaries SPAF integrates."""
     import shutil
 
-    table = Table(title="SPAF External Recon Toolkit", show_header=True, header_style="bold white")
-    table.add_column("Tool", style="cyan")
-    table.add_column("Installed", justify="center")
-    table.add_column("Role", style="white")
-    table.add_column("Source", style="dim")
+    def render_table():
+        table = Table(title="SPAF External Recon Toolkit", show_header=True, header_style="bold white")
+        table.add_column("Tool", style="cyan")
+        table.add_column("Installed", justify="center")
+        table.add_column("Role", style="white")
+        table.add_column("Source", style="dim")
+        miss = []
+        for name, meta in TOOL_REGISTRY.items():
+            ok = shutil.which(name) is not None
+            if not ok:
+                miss.append(name)
+            status = "[bold green]✓[/bold green]" if ok else "[bold red]✗[/bold red]"
+            table.add_row(name, status, meta["role"], meta["url"])
+        console.print(table)
+        return miss
 
-    missing = []
-    for name, meta in TOOL_REGISTRY.items():
-        installed = shutil.which(name) is not None
-        if not installed:
-            missing.append(name)
-        status = "[bold green]✓[/bold green]" if installed else "[bold red]✗[/bold red]"
-        table.add_row(name, status, meta["role"], meta["url"])
+    missing = render_table()
 
-    console.print(table)
+    if install:
+        _install_tools(missing, force)
+        return
 
     if missing:
         console.print(
@@ -774,12 +785,57 @@ def tools():
             f"{', '.join(missing)}"
         )
         console.print(
-            "[dim]Install ProjectDiscovery tools (subfinder, httpx, nuclei, katana, dnsx) via "
-            "'go install' or their release binaries; assetfinder/waybackurls/gau/hakrawler via 'go install'; "
-            "ffuf from https://github.com/ffuf/ffuf.[/dim]"
+            "[dim]Install them automatically with [bold]spaf tools --install[/bold] (requires Go), "
+            "or grab release binaries from each tool's page above.[/dim]"
         )
     else:
         console.print("\n[bold green]All external recon tools are installed and ready.[/bold green]")
+
+
+def _install_tools(missing: list, force: bool):
+    """Install the Go-based recon tools via 'go install'."""
+    import shutil
+    import subprocess
+    from spaf.modules.toolkit import GO_INSTALL
+
+    if not shutil.which("go"):
+        console.print(
+            "[bold red]Go toolchain not found.[/bold red] Install Go first: https://go.dev/dl/\n"
+            "[dim]Then re-run 'spaf tools --install'. (ffuf and the others are Go programs.)[/dim]"
+        )
+        raise typer.Exit(1)
+
+    targets = list(GO_INSTALL) if force else missing
+    if not targets:
+        console.print("[bold green]Nothing to install — all tools are already present.[/bold green]")
+        return
+
+    gobin = os.path.expanduser(os.path.join(os.getenv("GOBIN") or "~/go/bin"))
+    console.print(f"[cyan]Installing {len(targets)} tool(s) via 'go install' → {gobin}[/cyan]\n")
+
+    ok, failed = [], []
+    for name in targets:
+        spec = GO_INSTALL.get(name)
+        if not spec:
+            continue
+        with console.status(f"[bold cyan]go install {name}…[/bold cyan]"):
+            proc = subprocess.run(
+                ["go", "install", spec], capture_output=True, text=True
+            )
+        if proc.returncode == 0:
+            console.print(f"  [green]✓[/green] {name}")
+            ok.append(name)
+        else:
+            console.print(f"  [red]✗[/red] {name}: {proc.stderr.strip().splitlines()[-1] if proc.stderr.strip() else 'failed'}")
+            failed.append(name)
+
+    console.print(f"\n[bold green]Installed {len(ok)}[/bold green]"
+                  + (f", [bold red]{len(failed)} failed[/bold red]" if failed else ""))
+    if shutil.which(ok[0]) is None if ok else False:
+        console.print(
+            f"[yellow]Note:[/yellow] add Go's bin dir to your PATH so SPAF can find the tools:\n"
+            f"  [dim]export PATH=\"$PATH:{gobin}\"[/dim]"
+        )
 
 
 @app.command()
@@ -787,7 +843,8 @@ def report(
     target: Optional[str] = typer.Argument(None, help="Target to generate report for"),
     format: str = typer.Option("both", "--format", help="Report format: html|json|both"),
     output_dir: str = typer.Option("./reports", "--output-dir", help="Directory to save reports"),
-    from_file: Optional[str] = typer.Option(None, "--from-file", help="Generate report from a local JSON results file")
+    from_file: Optional[str] = typer.Option(None, "--from-file", help="Generate report from a local JSON results file"),
+    with_ai: bool = typer.Option(False, "--with-ai", help="Embed an AI threat-intelligence analysis in the report"),
 ):
     """Generate a security report for a target from database history or local file."""
     if not target and not from_file:
@@ -826,8 +883,13 @@ def report(
             console.print(f"[yellow]No findings found for target: {report_target}[/yellow]")
             return
             
+        ai_analysis = None
+        if with_ai:
+            with console.status("[bold magenta]AI is analyzing findings for the report…[/bold magenta]"):
+                ai_analysis = await ai_orchestrator.analyze_findings(findings)
+
         meta = {"target": report_target, "total_findings": len(findings)}
-        generator = ReportGenerator(report_target, findings, meta)
+        generator = ReportGenerator(report_target, findings, meta, ai_analysis=ai_analysis)
         
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         

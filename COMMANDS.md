@@ -115,6 +115,71 @@ spaf crawl https://target.com --no-ai          # Skip AI analysis
 
 ---
 
+### `spaf toolkit <target>` — External Recon Pipeline
+
+Runs a chained pipeline of best-in-class open-source recon binaries, feeding each
+stage's output into the next:
+
+```
+subfinder / assetfinder → dnsx → httpx → katana / hakrawler
+                                       → waybackurls / gau → ffuf → nuclei
+```
+
+Each binary is **optional** — if it is not on `$PATH` the stage is skipped with a
+warning, so the pipeline degrades gracefully on a partial install.
+
+```bash
+spaf toolkit target.com                          # Full pipeline
+spaf toolkit target.com --no-nuclei --no-crawl   # Recon-only (no active scan)
+spaf toolkit target.com --fuzz --wordlist wl.txt # Add ffuf content fuzzing
+spaf toolkit target.com --nuclei-severity critical,high
+spaf toolkit target.com --output recon.json --no-ai
+```
+
+| Flag | Default | Description |
+|---|---|---|
+| `--no-subs` | off | Skip subdomain enumeration (subfinder/assetfinder) |
+| `--no-probe` | off | Skip HTTP probing (httpx) |
+| `--no-crawl` | off | Skip active crawling (katana/hakrawler) |
+| `--no-urls` | off | Skip historical URL harvesting (waybackurls/gau) |
+| `--no-nuclei` | off | Skip nuclei vulnerability scanning |
+| `--fuzz` | off | Enable ffuf content fuzzing (requires `--wordlist`) |
+| `--wordlist <file>` | — | Wordlist for ffuf |
+| `--depth <n>` | `2` | Crawl depth for katana |
+| `--nuclei-severity <list>` | `critical,high,medium` | Comma-separated nuclei severities |
+| `--output <file>` | — | Save results as JSON |
+| `--no-ai` | off | Skip AI analysis |
+| `--no-db` | off | Run without MongoDB logging |
+
+---
+
+### `spaf tools` — Toolkit Installation Status
+
+Lists every external recon binary SPAF integrates and shows whether each is
+installed on your system, with install sources for any that are missing.
+
+```bash
+spaf tools
+```
+
+| Tool | Role |
+|---|---|
+| `subfinder` | Passive subdomain enumeration |
+| `assetfinder` | Passive subdomain/asset discovery |
+| `dnsx` | Fast DNS resolver / toolkit |
+| `httpx` | HTTP(S) probing & fingerprinting |
+| `katana` | Next-gen crawling & spidering |
+| `hakrawler` | Fast endpoint crawler |
+| `waybackurls` | Wayback Machine URL harvesting |
+| `gau` | getallurls historical URL fetch |
+| `ffuf` | Content / directory fuzzing |
+| `nuclei` | Template-based vulnerability scanning |
+
+> The Docker image installs the full suite automatically. For a local install,
+> use `go install` for the Go-based tools and grab `ffuf` from its releases page.
+
+---
+
 ## 🤖 AI Commands
 
 ### `spaf test-ai` — AI Provider Health Check

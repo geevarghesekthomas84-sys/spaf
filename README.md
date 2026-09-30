@@ -100,6 +100,7 @@ Build a complete attack surface map before firing a single payload.
 - DNS Record audit: SPF, DMARC, AXFR zone transfer
 - WHOIS registrant email exposure analysis
 - **Shodan passive IP intelligence** (optional)
+- **External recon toolkit** (`spaf toolkit`) — chains `subfinder`, `assetfinder`, `dnsx`, `httpx`, `katana`, `hakrawler`, `waybackurls`, `gau`, `ffuf` & `nuclei` into one pipeline (run `spaf tools` to check installs)
 
 </td>
 <td valign="top" width="50%">

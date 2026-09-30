@@ -20,6 +20,7 @@ from spaf.modules.recon import ReconModule
 from spaf.modules.network import NetworkModule
 from spaf.modules.webscan import WebscanModule
 from spaf.modules.crawler import CrawlerModule
+from spaf.modules.toolkit import ToolkitModule, TOOL_REGISTRY
 from spaf.reports.generator import ReportGenerator
 from spaf.utils.ai import ai_orchestrator
 from spaf.utils.auth import auth_manager
@@ -249,7 +250,7 @@ def poc(
 def watch(
     target: str   = typer.Argument(..., help="Target to monitor"),
     interval: int = typer.Option(3600,    "--interval", help="Scan interval in seconds (default: 1 hour)"),
-    module: str   = typer.Option("recon", "--module",   help="Module to run: recon|webscan|network|crawl"),
+    module: str   = typer.Option("recon", "--module",   help="Module to run: recon|webscan|network|crawl|toolkit"),
     no_ai: bool   = typer.Option(False,   "--no-ai",    help="Skip AI analysis after each scheduled scan"),
     no_db: bool   = typer.Option(False,   "--no-db",    help="Run without database logging"),
 ):
@@ -268,6 +269,7 @@ def watch(
             "webscan": WebscanModule,
             "network": NetworkModule,
             "crawl":   CrawlerModule,
+            "toolkit": ToolkitModule,
         }
         mod_class = module_map.get(module)
         if not mod_class:
@@ -667,6 +669,94 @@ def crawl(
             console.print(f"[green]All results saved to:[/green] {output}")
 
     asyncio.run(run())
+
+
+@app.command()
+def toolkit(
+    target: str           = typer.Argument(..., help="Target domain (or file of targets)"),
+    no_subs: bool         = typer.Option(False, "--no-subs",   help="Skip subdomain enumeration (subfinder/assetfinder)"),
+    no_probe: bool        = typer.Option(False, "--no-probe",  help="Skip HTTP probing (httpx)"),
+    no_crawl: bool        = typer.Option(False, "--no-crawl",  help="Skip active crawling (katana/hakrawler)"),
+    no_urls: bool         = typer.Option(False, "--no-urls",   help="Skip historical URL harvesting (waybackurls/gau)"),
+    no_nuclei: bool       = typer.Option(False, "--no-nuclei", help="Skip nuclei vulnerability scanning"),
+    fuzz: bool            = typer.Option(False, "--fuzz",      help="Enable content fuzzing (ffuf) — requires --wordlist"),
+    wordlist: Optional[str] = typer.Option(None, "--wordlist", help="Wordlist path for ffuf content fuzzing"),
+    depth: int            = typer.Option(2,     "--depth",     help="Crawl depth for katana"),
+    nuclei_severity: str  = typer.Option("critical,high,medium", "--nuclei-severity", help="Comma-separated nuclei severities"),
+    output: Optional[str] = typer.Option(None,  "--output",    help="Output file for results (JSON)"),
+    no_db: bool           = typer.Option(False, "--no-db",     help="Run in offline mode without database logging"),
+    no_ai: bool           = typer.Option(False, "--no-ai",     help="Skip automatic AI analysis after scan"),
+):
+    """Run the chained external recon pipeline (subfinder → httpx → katana → nuclei, etc.)."""
+    targets = load_targets(target)
+
+    async def run():
+        if not no_db:
+            try:
+                await _init_db()
+            except ConnectionError:
+                console.print("[bold red]Database Error:[/bold red] Could not connect to MongoDB. Use --no-db for offline mode.")
+                raise typer.Exit(1)
+
+        options = {
+            "subs":            not no_subs,
+            "probe":           not no_probe,
+            "crawl":           not no_crawl,
+            "urls":            not no_urls,
+            "nuclei":          not no_nuclei,
+            "fuzz":            fuzz,
+            "wordlist":        wordlist,
+            "depth":           depth,
+            "nuclei_severity": nuclei_severity,
+            "no_db":           no_db,
+            "no_ai":           no_ai,
+        }
+        tasks = [engine.run_module(ToolkitModule, t, options) for t in targets]
+        all_results = await asyncio.gather(*tasks)
+
+        if output:
+            flat_results = [item for sublist in all_results for item in sublist]
+            with open(output, "w") as f:
+                json.dump(flat_results, f, indent=4)
+            console.print(f"[green]All results saved to:[/green] {output}")
+
+    asyncio.run(run())
+
+
+@app.command()
+def tools():
+    """List the external recon binaries SPAF integrates and whether each is installed."""
+    import shutil
+
+    table = Table(title="SPAF External Recon Toolkit", show_header=True, header_style="bold white")
+    table.add_column("Tool", style="cyan")
+    table.add_column("Installed", justify="center")
+    table.add_column("Role", style="white")
+    table.add_column("Source", style="dim")
+
+    missing = []
+    for name, meta in TOOL_REGISTRY.items():
+        installed = shutil.which(name) is not None
+        if not installed:
+            missing.append(name)
+        status = "[bold green]✓[/bold green]" if installed else "[bold red]✗[/bold red]"
+        table.add_row(name, status, meta["role"], meta["url"])
+
+    console.print(table)
+
+    if missing:
+        console.print(
+            f"\n[yellow]Missing {len(missing)}/{len(TOOL_REGISTRY)} tool(s):[/yellow] "
+            f"{', '.join(missing)}"
+        )
+        console.print(
+            "[dim]Install ProjectDiscovery tools (subfinder, httpx, nuclei, katana, dnsx) via "
+            "'go install' or their release binaries; assetfinder/waybackurls/gau/hakrawler via 'go install'; "
+            "ffuf from https://github.com/ffuf/ffuf.[/dim]"
+        )
+    else:
+        console.print("\n[bold green]All external recon tools are installed and ready.[/bold green]")
+
 
 @app.command()
 def report(

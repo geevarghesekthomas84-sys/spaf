@@ -683,12 +683,40 @@ def toolkit(
     wordlist: Optional[str] = typer.Option(None, "--wordlist", help="Wordlist path for ffuf content fuzzing"),
     depth: int            = typer.Option(2,     "--depth",     help="Crawl depth for katana"),
     nuclei_severity: str  = typer.Option("critical,high,medium", "--nuclei-severity", help="Comma-separated nuclei severities"),
+    scope_file: str       = typer.Option("scope.json", "--scope-file", help="Engagement scope file consulted before active scanning"),
+    ignore_scope: bool    = typer.Option(False, "--ignore-scope", help="Skip engagement-scope enforcement (dangerous)"),
     output: Optional[str] = typer.Option(None,  "--output",    help="Output file for results (JSON)"),
     no_db: bool           = typer.Option(False, "--no-db",     help="Run in offline mode without database logging"),
     no_ai: bool           = typer.Option(False, "--no-ai",     help="Skip automatic AI analysis after scan"),
 ):
     """Run the chained external recon pipeline (subfinder → httpx → katana → nuclei, etc.)."""
+    from spaf.utils.scope import load_scope, has_scope, is_in_scope
+
     targets = load_targets(target)
+
+    # ── Engagement-scope enforcement ──────────────────────────────────────
+    scope_data = load_scope(scope_file)
+    if ignore_scope:
+        console.print("[bold red]⚠ Scope enforcement disabled (--ignore-scope).[/bold red]")
+        scope_data = None
+    elif has_scope(scope_data):
+        allowed = [t for t in targets if is_in_scope(t, scope_data)]
+        blocked = [t for t in targets if t not in allowed]
+        for t in blocked:
+            console.print(
+                f"[bold red]✗ Skipping out-of-scope target:[/bold red] {t} "
+                f"[dim](not in {scope_file}; use 'spaf scope add' or --ignore-scope)[/dim]"
+            )
+        targets = allowed
+        if not targets:
+            console.print("[bold red]No in-scope targets to scan.[/bold red]")
+            raise typer.Exit(1)
+    else:
+        console.print(
+            f"[yellow]No engagement scope defined in {scope_file}.[/yellow] "
+            "[dim]Active scanners will run against every discovered host. "
+            "Define one with 'spaf scope add <target>'.[/dim]"
+        )
 
     async def run():
         if not no_db:
@@ -708,6 +736,7 @@ def toolkit(
             "wordlist":        wordlist,
             "depth":           depth,
             "nuclei_severity": nuclei_severity,
+            "scope":           scope_data,
             "no_db":           no_db,
             "no_ai":           no_ai,
         }
@@ -973,17 +1002,7 @@ def scope(
     spaf scope add target.com
     spaf scope remove target.com
     """
-    import json as _json
-
-    def load_scope(path: str) -> dict:
-        if os.path.exists(path):
-            with open(path) as fh:
-                return _json.load(fh)
-        return {"in_scope": [], "out_of_scope": []}
-
-    def save_scope(path: str, data: dict):
-        with open(path, "w") as fh:
-            _json.dump(data, fh, indent=2)
+    from spaf.utils.scope import load_scope, save_scope
 
     data = load_scope(scope_file)
     act  = action.lower()

@@ -147,9 +147,17 @@ spaf toolkit target.com --output recon.json --no-ai
 | `--wordlist <file>` | — | Wordlist for ffuf |
 | `--depth <n>` | `2` | Crawl depth for katana |
 | `--nuclei-severity <list>` | `critical,high,medium` | Comma-separated nuclei severities |
+| `--scope-file <file>` | `scope.json` | Engagement scope consulted before active scanning |
+| `--ignore-scope` | off | Disable scope enforcement (dangerous) |
 | `--output <file>` | — | Save results as JSON |
 | `--no-ai` | off | Skip AI analysis |
 | `--no-db` | off | Run without MongoDB logging |
+
+> **Scope safety:** if a scope file with in-scope entries exists, out-of-scope
+> entry targets are refused and subdomains discovered outside the scope are
+> dropped before any active stage (httpx/katana/ffuf/nuclei) runs. Manage scope
+> with `spaf scope add|remove|show`. Bypass with `--ignore-scope` only when you
+> have authorization for every host in the target set.
 
 ---
 

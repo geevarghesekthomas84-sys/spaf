@@ -36,6 +36,7 @@ from rich.table import Table
 from spaf.core.engine import BaseModule
 from spaf.utils.risk import build_finding
 from spaf.utils.logger import logger
+from spaf.utils.scope import is_in_scope
 
 # Reference metadata for every supported binary (used by `spaf tools`).
 TOOL_REGISTRY: Dict[str, Dict[str, str]] = {
@@ -94,6 +95,24 @@ class ToolkitModule(BaseModule):
                     "toolkit", extra={"count": len(subs), "sample": sorted(subs)[:25]},
                 ))
         progress.update(task, completed=20)
+
+        # ── Scope enforcement ─────────────────────────────────────────────
+        # Passive enumeration may surface hosts outside the engagement scope
+        # (e.g. third-party subdomains). Filter them out before any active
+        # stage (probing, crawling, fuzzing, nuclei) touches them.
+        scope = self.options.get("scope")
+        if scope:
+            in_scope = {h for h in hosts if is_in_scope(h, scope)}
+            dropped = hosts - in_scope
+            if dropped:
+                findings.append(build_finding(
+                    domain, "hosts_excluded_by_scope",
+                    f"{len(dropped)} discovered host(s) were skipped as out-of-scope.",
+                    "Info", "Add them to the engagement scope to include them in active scans.",
+                    "toolkit", extra={"count": len(dropped), "sample": sorted(dropped)[:25]},
+                ))
+                logger.info(f"toolkit: {len(dropped)} host(s) dropped by scope filter.")
+            hosts = in_scope or {domain}
 
         # ── Stage 2: DNS resolution ───────────────────────────────────────
         resolved = sorted(hosts)

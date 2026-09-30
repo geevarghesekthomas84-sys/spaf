@@ -1,0 +1,52 @@
+name: 🐛 Bug report
+description: Report a problem with SPAF
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! Please do **not** include real target hostnames,
+        credentials, API keys, or other sensitive data in this report.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug and what you expected instead.
+      placeholder: When I run `spaf ...`, I get ...
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: The exact command(s) and any relevant config (redacted).
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error output / logs
+      description: Paste the relevant terminal output (redact anything sensitive).
+      render: shell
+  - type: input
+    id: version
+    attributes:
+      label: SPAF version / commit
+      placeholder: v1.0.0 or commit sha
+    validations:
+      required: true
+  - type: input
+    id: python
+    attributes:
+      label: Python version & OS
+      placeholder: Python 3.12 on Ubuntu 24.04
+    validations:
+      required: true
+  - type: checkboxes
+    id: authorized
+    attributes:
+      label: Authorization
+      options:
+        - label: This report does not request or describe unauthorized testing of systems I don't own or have permission to test.
+          required: true

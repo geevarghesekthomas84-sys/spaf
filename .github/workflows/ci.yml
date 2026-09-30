@@ -1,0 +1,86 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install package + dev dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run test suite
+        run: pytest -q
+
+  lint:
+    name: Lint (ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install ruff
+        run: pip install ruff
+      - name: Ruff check (real defects only; see [tool.ruff] in pyproject)
+        run: ruff check spaf tests
+
+  build:
+    name: Build wheel
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Build distribution
+        run: |
+          pip install build
+          python -m build
+      - name: Verify all subpackages are packaged
+        run: |
+          python - <<'PY'
+          import glob, zipfile, os, sys
+          whl = sorted(glob.glob("dist/*.whl"))[-1]
+          names = zipfile.ZipFile(whl).namelist()
+          pkgs = {os.path.dirname(n) for n in names if n.startswith("spaf/")}
+          required = {
+              "spaf", "spaf/cli", "spaf/core", "spaf/database",
+              "spaf/modules", "spaf/reports", "spaf/utils",
+          }
+          missing = required - pkgs
+          if missing:
+              print("Missing packages in wheel:", missing)
+              sys.exit(1)
+          print("All packages present in wheel.")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: spaf-dist
+          path: dist/*

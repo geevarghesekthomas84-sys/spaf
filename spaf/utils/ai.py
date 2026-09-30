@@ -1,7 +1,7 @@
 import os
 import json
 import asyncio
-from typing import List, Optional, Dict, Any
+from typing import List, Dict, Any
 
 # ── Google GenAI (new SDK) ────────────────────────────────────────────────────
 try:
@@ -32,7 +32,7 @@ from spaf.utils.logger import logger
 
 def _normalise_provider(raw: str) -> str:
     raw = raw.strip().lower().replace("-", "").replace("_", "")
-    if raw in ("lmstudio", "lmstudio"):
+    if raw == "lmstudio":
         return "lmstudio"
     if raw == "claude":
         return "claude"

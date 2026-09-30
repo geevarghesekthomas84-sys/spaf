@@ -1,4 +1,3 @@
-import asyncio
 import aiohttp
 from typing import Any, Dict, Type, List
 from datetime import datetime

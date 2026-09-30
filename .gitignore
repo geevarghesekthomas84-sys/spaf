@@ -13,11 +13,11 @@ dist/
 proxies.txt
 
 # Database & Logs
-logs/
+/logs/
 *.log
 
-# Reports
-reports/
+# Reports (generated output dir at repo root — not the spaf/reports package)
+/reports/
 
 # OS
 .DS_Store

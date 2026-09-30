@@ -12,7 +12,7 @@ from rich.table import Table
 
 from spaf.core.engine import ScanEngine
 from spaf.database.mongo import db
-from spaf.utils.validator import validate_target, validate_url, sanitize_domain
+from spaf.utils.validator import validate_target, sanitize_domain
 from spaf.utils.logger import logger
 
 # Modules
@@ -461,24 +461,10 @@ def setup():
         
     console.print("[bold green]Configuration saved to .env[/bold green]")
 
-@app.command()
-def test_ai():
-    """Verify connectivity and responsiveness of the configured AI provider."""
-    async def run():
-        console.print(f"[bold cyan]Testing connection to {ai_orchestrator.provider.capitalize()}...[/bold cyan]")
-        test_prompt = "Say 'SPAF AI is Online' if you can read this."
-        try:
-            with console.status("[bold yellow]Waiting for AI response..."):
-                response = await ai_orchestrator.chat(test_prompt)
-                if "SPAF AI is Online" in response or len(response) > 0:
-                    console.print("[bold green]Success![/bold green] AI is responding correctly.")
-                    console.print(f"[dim]Response: {response}[/dim]")
-                else:
-                    console.print("[bold red]Failed![/bold red] AI responded but the output was unexpected.")
-        except Exception as e:
-            console.print(f"[bold red]Connection Error:[/bold red] {e}")
-            
-    asyncio.run(run())
+# NOTE: `test-ai` is defined once above via @app.command(name="test-ai") — the
+# detailed health-check with a status table. A second, simpler definition used
+# to live here and silently overrode it (both resolved to the CLI name
+# "test-ai"); it has been removed.
 
 @app.command()
 def login(
@@ -572,6 +558,15 @@ def scan(
 
     if scanner not in ["nmap", "rustscan"]:
         console.print("[bold red]Error:[/bold red] Scanner must be nmap or rustscan.")
+        raise typer.Exit(1)
+
+    # Validate every target (defense-in-depth: these are passed to external binaries).
+    valid_targets = [t for t in targets if validate_target(sanitize_domain(t))]
+    for bad in [t for t in targets if t not in valid_targets]:
+        console.print(f"[bold red]Skipping invalid target:[/bold red] {bad}")
+    targets = valid_targets
+    if not targets:
+        console.print("[bold red]Error:[/bold red] No valid targets to scan.")
         raise typer.Exit(1)
 
     async def run():
@@ -683,12 +678,41 @@ def toolkit(
     wordlist: Optional[str] = typer.Option(None, "--wordlist", help="Wordlist path for ffuf content fuzzing"),
     depth: int            = typer.Option(2,     "--depth",     help="Crawl depth for katana"),
     nuclei_severity: str  = typer.Option("critical,high,medium", "--nuclei-severity", help="Comma-separated nuclei severities"),
+    nuclei_dast: bool     = typer.Option(False, "--nuclei-dast", help="Run nuclei DAST/fuzzing templates against the crawled URL corpus"),
+    scope_file: str       = typer.Option("scope.json", "--scope-file", help="Engagement scope file consulted before active scanning"),
+    ignore_scope: bool    = typer.Option(False, "--ignore-scope", help="Skip engagement-scope enforcement (dangerous)"),
     output: Optional[str] = typer.Option(None,  "--output",    help="Output file for results (JSON)"),
     no_db: bool           = typer.Option(False, "--no-db",     help="Run in offline mode without database logging"),
     no_ai: bool           = typer.Option(False, "--no-ai",     help="Skip automatic AI analysis after scan"),
 ):
     """Run the chained external recon pipeline (subfinder → httpx → katana → nuclei, etc.)."""
+    from spaf.utils.scope import load_scope, has_scope, is_in_scope
+
     targets = load_targets(target)
+
+    # ── Engagement-scope enforcement ──────────────────────────────────────
+    scope_data = load_scope(scope_file)
+    if ignore_scope:
+        console.print("[bold red]⚠ Scope enforcement disabled (--ignore-scope).[/bold red]")
+        scope_data = None
+    elif has_scope(scope_data):
+        allowed = [t for t in targets if is_in_scope(t, scope_data)]
+        blocked = [t for t in targets if t not in allowed]
+        for t in blocked:
+            console.print(
+                f"[bold red]✗ Skipping out-of-scope target:[/bold red] {t} "
+                f"[dim](not in {scope_file}; use 'spaf scope add' or --ignore-scope)[/dim]"
+            )
+        targets = allowed
+        if not targets:
+            console.print("[bold red]No in-scope targets to scan.[/bold red]")
+            raise typer.Exit(1)
+    else:
+        console.print(
+            f"[yellow]No engagement scope defined in {scope_file}.[/yellow] "
+            "[dim]Active scanners will run against every discovered host. "
+            "Define one with 'spaf scope add <target>'.[/dim]"
+        )
 
     async def run():
         if not no_db:
@@ -708,6 +732,8 @@ def toolkit(
             "wordlist":        wordlist,
             "depth":           depth,
             "nuclei_severity": nuclei_severity,
+            "nuclei_dast":     nuclei_dast,
+            "scope":           scope_data,
             "no_db":           no_db,
             "no_ai":           no_ai,
         }
@@ -724,25 +750,34 @@ def toolkit(
 
 
 @app.command()
-def tools():
-    """List the external recon binaries SPAF integrates and whether each is installed."""
+def tools(
+    install: bool = typer.Option(False, "--install", help="Install missing Go-based recon tools via 'go install'"),
+    force: bool = typer.Option(False, "--force", help="With --install, (re)install every tool, not just missing ones"),
+):
+    """List — and optionally install — the external recon binaries SPAF integrates."""
     import shutil
 
-    table = Table(title="SPAF External Recon Toolkit", show_header=True, header_style="bold white")
-    table.add_column("Tool", style="cyan")
-    table.add_column("Installed", justify="center")
-    table.add_column("Role", style="white")
-    table.add_column("Source", style="dim")
+    def render_table():
+        table = Table(title="SPAF External Recon Toolkit", show_header=True, header_style="bold white")
+        table.add_column("Tool", style="cyan")
+        table.add_column("Installed", justify="center")
+        table.add_column("Role", style="white")
+        table.add_column("Source", style="dim")
+        miss = []
+        for name, meta in TOOL_REGISTRY.items():
+            ok = shutil.which(name) is not None
+            if not ok:
+                miss.append(name)
+            status = "[bold green]✓[/bold green]" if ok else "[bold red]✗[/bold red]"
+            table.add_row(name, status, meta["role"], meta["url"])
+        console.print(table)
+        return miss
 
-    missing = []
-    for name, meta in TOOL_REGISTRY.items():
-        installed = shutil.which(name) is not None
-        if not installed:
-            missing.append(name)
-        status = "[bold green]✓[/bold green]" if installed else "[bold red]✗[/bold red]"
-        table.add_row(name, status, meta["role"], meta["url"])
+    missing = render_table()
 
-    console.print(table)
+    if install:
+        _install_tools(missing, force)
+        return
 
     if missing:
         console.print(
@@ -750,12 +785,57 @@ def tools():
             f"{', '.join(missing)}"
         )
         console.print(
-            "[dim]Install ProjectDiscovery tools (subfinder, httpx, nuclei, katana, dnsx) via "
-            "'go install' or their release binaries; assetfinder/waybackurls/gau/hakrawler via 'go install'; "
-            "ffuf from https://github.com/ffuf/ffuf.[/dim]"
+            "[dim]Install them automatically with [bold]spaf tools --install[/bold] (requires Go), "
+            "or grab release binaries from each tool's page above.[/dim]"
         )
     else:
         console.print("\n[bold green]All external recon tools are installed and ready.[/bold green]")
+
+
+def _install_tools(missing: list, force: bool):
+    """Install the Go-based recon tools via 'go install'."""
+    import shutil
+    import subprocess
+    from spaf.modules.toolkit import GO_INSTALL
+
+    if not shutil.which("go"):
+        console.print(
+            "[bold red]Go toolchain not found.[/bold red] Install Go first: https://go.dev/dl/\n"
+            "[dim]Then re-run 'spaf tools --install'. (ffuf and the others are Go programs.)[/dim]"
+        )
+        raise typer.Exit(1)
+
+    targets = list(GO_INSTALL) if force else missing
+    if not targets:
+        console.print("[bold green]Nothing to install — all tools are already present.[/bold green]")
+        return
+
+    gobin = os.path.expanduser(os.path.join(os.getenv("GOBIN") or "~/go/bin"))
+    console.print(f"[cyan]Installing {len(targets)} tool(s) via 'go install' → {gobin}[/cyan]\n")
+
+    ok, failed = [], []
+    for name in targets:
+        spec = GO_INSTALL.get(name)
+        if not spec:
+            continue
+        with console.status(f"[bold cyan]go install {name}…[/bold cyan]"):
+            proc = subprocess.run(
+                ["go", "install", spec], capture_output=True, text=True
+            )
+        if proc.returncode == 0:
+            console.print(f"  [green]✓[/green] {name}")
+            ok.append(name)
+        else:
+            console.print(f"  [red]✗[/red] {name}: {proc.stderr.strip().splitlines()[-1] if proc.stderr.strip() else 'failed'}")
+            failed.append(name)
+
+    console.print(f"\n[bold green]Installed {len(ok)}[/bold green]"
+                  + (f", [bold red]{len(failed)} failed[/bold red]" if failed else ""))
+    if shutil.which(ok[0]) is None if ok else False:
+        console.print(
+            f"[yellow]Note:[/yellow] add Go's bin dir to your PATH so SPAF can find the tools:\n"
+            f"  [dim]export PATH=\"$PATH:{gobin}\"[/dim]"
+        )
 
 
 @app.command()
@@ -763,7 +843,8 @@ def report(
     target: Optional[str] = typer.Argument(None, help="Target to generate report for"),
     format: str = typer.Option("both", "--format", help="Report format: html|json|both"),
     output_dir: str = typer.Option("./reports", "--output-dir", help="Directory to save reports"),
-    from_file: Optional[str] = typer.Option(None, "--from-file", help="Generate report from a local JSON results file")
+    from_file: Optional[str] = typer.Option(None, "--from-file", help="Generate report from a local JSON results file"),
+    with_ai: bool = typer.Option(False, "--with-ai", help="Embed an AI threat-intelligence analysis in the report"),
 ):
     """Generate a security report for a target from database history or local file."""
     if not target and not from_file:
@@ -802,8 +883,13 @@ def report(
             console.print(f"[yellow]No findings found for target: {report_target}[/yellow]")
             return
             
+        ai_analysis = None
+        if with_ai:
+            with console.status("[bold magenta]AI is analyzing findings for the report…[/bold magenta]"):
+                ai_analysis = await ai_orchestrator.analyze_findings(findings)
+
         meta = {"target": report_target, "total_findings": len(findings)}
-        generator = ReportGenerator(report_target, findings, meta)
+        generator = ReportGenerator(report_target, findings, meta, ai_analysis=ai_analysis)
         
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         
@@ -973,17 +1059,7 @@ def scope(
     spaf scope add target.com
     spaf scope remove target.com
     """
-    import json as _json
-
-    def load_scope(path: str) -> dict:
-        if os.path.exists(path):
-            with open(path) as fh:
-                return _json.load(fh)
-        return {"in_scope": [], "out_of_scope": []}
-
-    def save_scope(path: str, data: dict):
-        with open(path, "w") as fh:
-            _json.dump(data, fh, indent=2)
+    from spaf.utils.scope import load_scope, save_scope
 
     data = load_scope(scope_file)
     act  = action.lower()

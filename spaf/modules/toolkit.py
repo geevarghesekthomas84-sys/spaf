@@ -36,6 +36,7 @@ from rich.table import Table
 from spaf.core.engine import BaseModule
 from spaf.utils.risk import build_finding
 from spaf.utils.logger import logger
+from spaf.utils.scope import is_in_scope
 
 # Reference metadata for every supported binary (used by `spaf tools`).
 TOOL_REGISTRY: Dict[str, Dict[str, str]] = {
@@ -49,6 +50,20 @@ TOOL_REGISTRY: Dict[str, Dict[str, str]] = {
     "gau":         {"role": "getallurls historical URL fetch",    "url": "https://github.com/lc/gau"},
     "ffuf":        {"role": "Content / directory fuzzing",        "url": "https://github.com/ffuf/ffuf"},
     "nuclei":      {"role": "Template-based vulnerability scan",  "url": "https://github.com/projectdiscovery/nuclei"},
+}
+
+# `go install` specifications for the Go-based tools (used by `spaf tools --install`).
+GO_INSTALL: Dict[str, str] = {
+    "subfinder":   "github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest",
+    "httpx":       "github.com/projectdiscovery/httpx/cmd/httpx@latest",
+    "nuclei":      "github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest",
+    "katana":      "github.com/projectdiscovery/katana/cmd/katana@latest",
+    "dnsx":        "github.com/projectdiscovery/dnsx/cmd/dnsx@latest",
+    "assetfinder": "github.com/tomnomnom/assetfinder@latest",
+    "waybackurls": "github.com/tomnomnom/waybackurls@latest",
+    "hakrawler":   "github.com/hakluke/hakrawler@latest",
+    "gau":         "github.com/lc/gau/v2/cmd/gau@latest",
+    "ffuf":        "github.com/ffuf/ffuf/v2@latest",
 }
 
 # Map nuclei severities onto SPAF severities.
@@ -95,8 +110,25 @@ class ToolkitModule(BaseModule):
                 ))
         progress.update(task, completed=20)
 
+        # ── Scope enforcement ─────────────────────────────────────────────
+        # Passive enumeration may surface hosts outside the engagement scope
+        # (e.g. third-party subdomains). Filter them out before any active
+        # stage (probing, crawling, fuzzing, nuclei) touches them.
+        scope = self.options.get("scope")
+        if scope:
+            in_scope = {h for h in hosts if is_in_scope(h, scope)}
+            dropped = hosts - in_scope
+            if dropped:
+                findings.append(build_finding(
+                    domain, "hosts_excluded_by_scope",
+                    f"{len(dropped)} discovered host(s) were skipped as out-of-scope.",
+                    "Info", "Add them to the engagement scope to include them in active scans.",
+                    "toolkit", extra={"count": len(dropped), "sample": sorted(dropped)[:25]},
+                ))
+                logger.info(f"toolkit: {len(dropped)} host(s) dropped by scope filter.")
+            hosts = in_scope or {domain}
+
         # ── Stage 2: DNS resolution ───────────────────────────────────────
-        resolved = sorted(hosts)
         if self._available("dnsx") and len(hosts) > 1:
             progress.update(task, description="[cyan]Resolving hosts (dnsx)...")
             dnsx_out = await self._run_tool_stdin(
@@ -154,7 +186,14 @@ class ToolkitModule(BaseModule):
         # ── Stage 7: nuclei vulnerability scanning ────────────────────────
         if do_nuclei:
             progress.update(task, description="[cyan]Scanning for vulnerabilities (nuclei)...")
-            findings.extend(await self._nuclei(domain, live_urls))
+            # Feed nuclei the probed live hosts PLUS the crawled/historical URL
+            # corpus (in-scope only) so DAST/fuzzing templates reach real
+            # endpoints, not just site roots. Capped to keep scans bounded.
+            scope = self.options.get("scope")
+            corpus = [u for u in url_corpus if not scope or is_in_scope(u, scope)]
+            cap = self.options.get("nuclei_url_cap", 2000)
+            targets = list(dict.fromkeys([*live_urls, *sorted(corpus)]))[:cap]
+            findings.extend(await self._nuclei(domain, targets))
         progress.update(task, completed=100)
 
         return findings
@@ -308,14 +347,20 @@ class ToolkitModule(BaseModule):
             ))
         return findings
 
-    async def _nuclei(self, domain: str, live_urls: List[str]) -> List[Dict[str, Any]]:
+    async def _nuclei(self, domain: str, targets: List[str]) -> List[Dict[str, Any]]:
         findings: List[Dict[str, Any]] = []
         if not self._available("nuclei"):
             return [self._missing_tool_finding(domain, "nuclei")]
+        if not targets:
+            return findings
 
         severity = self.options.get("nuclei_severity", "critical,high,medium")
         cmd = ["nuclei", "-silent", "-jsonl", "-severity", severity]
-        out = await self._run_tool_stdin("nuclei", cmd, "\n".join(live_urls))
+        # DAST mode runs fuzzing templates against the URL corpus (query params,
+        # paths) — the workflow that finds injection on real endpoints.
+        if self.options.get("nuclei_dast"):
+            cmd.append("-dast")
+        out = await self._run_tool_stdin("nuclei", cmd, "\n".join(targets))
 
         for line in out:
             line = line.strip()

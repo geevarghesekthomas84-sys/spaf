@@ -115,7 +115,6 @@ class ToolkitModule(BaseModule):
             hosts = in_scope or {domain}
 
         # ── Stage 2: DNS resolution ───────────────────────────────────────
-        resolved = sorted(hosts)
         if self._available("dnsx") and len(hosts) > 1:
             progress.update(task, description="[cyan]Resolving hosts (dnsx)...")
             dnsx_out = await self._run_tool_stdin(

@@ -1,7 +1,6 @@
 import asyncio
 import os
 import socket
-import aiohttp
 import dns.resolver
 import dns.zone
 import dns.query

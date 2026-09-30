@@ -1,6 +1,5 @@
 import asyncio
 import os
-import aiohttp
 import xml.etree.ElementTree as ET
 from typing import Any, Dict, List
 from rich.table import Table

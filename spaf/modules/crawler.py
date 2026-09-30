@@ -1,14 +1,11 @@
-import asyncio
-import aiohttp
 from urllib.parse import urljoin, urlparse
 from bs4 import BeautifulSoup
-from typing import Any, Dict, List, Set
+from typing import Any, Dict, List
 from rich.table import Table
 from rich.progress import Progress
 
 from spaf.core.engine import BaseModule
 from spaf.utils.risk import build_finding
-from spaf.utils.logger import logger
 
 class CrawlerModule(BaseModule):
     async def run(self, progress: Progress) -> List[Dict[str, Any]]:

@@ -12,7 +12,7 @@ from rich.table import Table
 
 from spaf.core.engine import ScanEngine
 from spaf.database.mongo import db
-from spaf.utils.validator import validate_target, validate_url, sanitize_domain
+from spaf.utils.validator import validate_target, sanitize_domain
 from spaf.utils.logger import logger
 
 # Modules
@@ -461,24 +461,10 @@ def setup():
         
     console.print("[bold green]Configuration saved to .env[/bold green]")
 
-@app.command()
-def test_ai():
-    """Verify connectivity and responsiveness of the configured AI provider."""
-    async def run():
-        console.print(f"[bold cyan]Testing connection to {ai_orchestrator.provider.capitalize()}...[/bold cyan]")
-        test_prompt = "Say 'SPAF AI is Online' if you can read this."
-        try:
-            with console.status("[bold yellow]Waiting for AI response..."):
-                response = await ai_orchestrator.chat(test_prompt)
-                if "SPAF AI is Online" in response or len(response) > 0:
-                    console.print("[bold green]Success![/bold green] AI is responding correctly.")
-                    console.print(f"[dim]Response: {response}[/dim]")
-                else:
-                    console.print("[bold red]Failed![/bold red] AI responded but the output was unexpected.")
-        except Exception as e:
-            console.print(f"[bold red]Connection Error:[/bold red] {e}")
-            
-    asyncio.run(run())
+# NOTE: `test-ai` is defined once above via @app.command(name="test-ai") — the
+# detailed health-check with a status table. A second, simpler definition used
+# to live here and silently overrode it (both resolved to the CLI name
+# "test-ai"); it has been removed.
 
 @app.command()
 def login(

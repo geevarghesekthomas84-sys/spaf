@@ -1,7 +1,6 @@
 import os
 import random
 from typing import Optional, List
-from spaf.utils.logger import logger
 
 class ProxyManager:
     def __init__(self):

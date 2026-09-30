@@ -15,8 +15,9 @@
 
 <br>
 
+[![CI](https://img.shields.io/github/actions/workflow/status/geevarghesekthomas84-sys/spaf/ci.yml?branch=main&style=flat-square&label=CI&logo=githubactions&logoColor=white)](https://github.com/geevarghesekthomas84-sys/spaf/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
-[![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
+[![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
 [![Async](https://img.shields.io/badge/Engine-Asyncio-00C7B7?style=flat-square&logo=python&logoColor=white)](https://docs.python.org/3/library/asyncio.html)
 [![MongoDB](https://img.shields.io/badge/Database-MongoDB-47A248?style=flat-square&logo=mongodb&logoColor=white)](https://mongodb.com)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat-square&logo=docker&logoColor=white)](Dockerfile)
@@ -176,21 +177,25 @@ python -m venv venv
 source venv/bin/activate        # Linux / macOS
 venv\Scripts\activate           # Windows
 
-# Install dependencies
-pip install -r requirements.txt
+# Install SPAF (core)
 pip install -e .
 
-# Install shell tab-completion (optional but recommended)
-spaf --install-completion
+# …or pull in the optional extras you want:
+pip install -e ".[ai]"          # Google / Claude / OpenAI-compatible providers
+pip install -e ".[intel]"       # Shodan passive intelligence
+pip install -e ".[ai,intel]"    # everything
 
-# Run the interactive setup wizard
+# Configure environment, then install completion + run the wizard
+cp .env.example .env
+spaf --install-completion       # optional but recommended
 spaf setup
 ```
 
-> **Requirements:** Python 3.9+, [Nmap](https://nmap.org), MongoDB (local or remote)
+> **Requirements:** Python 3.11+, [Nmap](https://nmap.org), MongoDB (local or remote)
 >
-> **Optional:** [RustScan](https://github.com/RustScan/RustScan) for ultra-fast port discovery  
-> **Optional:** [Shodan CLI](https://pypi.org/project/shodan/) (`pip install shodan`) for passive recon
+> **Optional:** [RustScan](https://github.com/RustScan/RustScan) for ultra-fast port discovery
+> · the [recon toolkit](#-external-recon-toolkit) binaries (`spaf tools` to check)
+> · Shodan via the `intel` extra above
 
 ---
 

@@ -1,7 +1,7 @@
 import os
 import json
 import asyncio
-from typing import List, Optional, Dict, Any
+from typing import List, Dict, Any
 
 # ── Google GenAI (new SDK) ────────────────────────────────────────────────────
 try:

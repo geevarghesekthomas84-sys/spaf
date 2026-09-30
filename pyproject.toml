@@ -37,3 +37,26 @@ include = ["spaf*"]
 
 [project.scripts]
 spaf = "spaf.cli.main:entry_point"
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+# Lint for real defects (pyflakes + critical pycodestyle), not cosmetic style,
+# so the codebase's deliberate column alignment is left untouched.
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]
+# Ignore stylistic rules the codebase uses deliberately; keep real-bug rules on.
+ignore = [
+    "E741",  # ambiguous short names (l, z)
+    "E401",  # multiple imports on one line
+    "E402",  # module import not at top (load_dotenv must run first in main.py)
+    "E701",  # multiple statements on one line (colon) — used for terse guards
+    "E702",  # multiple statements on one line (semicolon)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]  # re-exports
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -183,28 +183,32 @@ spaf report example.com --format html --with-ai   # shareable HTML report + AI a
 
 ## 🚀 Installation
 
+### From PyPI (recommended)
+
 ```bash
-# Clone the repository
+pip install spaf                 # core
+pip install "spaf[ai]"           # + Google / Claude / OpenAI-compatible providers
+pip install "spaf[intel]"        # + Shodan passive intelligence
+pip install "spaf[ai,intel]"     # everything
+```
+
+### From source (for development)
+
+```bash
 git clone https://github.com/geevarghesekthomas84-sys/spaf.git
 cd spaf
-
-# Create and activate virtual environment
 python -m venv venv
-source venv/bin/activate        # Linux / macOS
-venv\Scripts\activate           # Windows
+source venv/bin/activate         # Windows: venv\Scripts\activate
+pip install -e ".[ai,intel,dev]" # editable install with all extras + test tools
+```
 
-# Install SPAF (core)
-pip install -e .
+### First run
 
-# …or pull in the optional extras you want:
-pip install -e ".[ai]"          # Google / Claude / OpenAI-compatible providers
-pip install -e ".[intel]"       # Shodan passive intelligence
-pip install -e ".[ai,intel]"    # everything
-
-# Configure environment, then install completion + run the wizard
-cp .env.example .env
-spaf --install-completion       # optional but recommended
-spaf setup
+```bash
+cp .env.example .env             # configure providers / MongoDB / stealth
+spaf --install-completion        # shell tab-completion (optional)
+spaf tools --install             # install the recon toolkit binaries (needs Go)
+spaf setup                       # interactive configuration wizard
 ```
 
 > **Requirements:** Python 3.11+, [Nmap](https://nmap.org), MongoDB (local or remote)
@@ -448,18 +452,48 @@ spaf/
 ├── spaf/
 │   ├── cli/          # Typer CLI — all commands
 │   ├── core/         # Async engine & BaseModule
-│   ├── modules/      # recon, network, webscan, crawler
-│   ├── utils/        # AI orchestrator, proxy, risk, validator, logger
+│   ├── modules/      # recon, network, webscan, crawler, toolkit
+│   ├── utils/        # AI orchestrator, proxy, risk, validator, scope, logger
 │   ├── database/     # MongoDB async driver (Motor) with full indexes
 │   └── reports/      # HTML & JSON report generator
 ├── tests/            # Pytest test suite
-├── plugins/          # Drop-in custom scan modules
-├── Dockerfile        # Python 3.12-slim + nmap
+├── scripts/          # demo.sh and helper scripts
+├── docs/             # Demo recipe and extra docs
+├── .github/          # CI + release workflows, issue/PR templates
+├── Dockerfile        # Python 3.12-slim + nmap + Go recon suite
 ├── docker-compose.yml # MongoDB 7 + SPAF with healthcheck
 ├── scope.json        # Engagement scope (auto-created)
 ├── COMMANDS.md       # Full command reference
 └── .env.example      # Configuration template
 ```
+
+---
+
+## 🤝 Contributing & Releasing
+
+Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) and the
+[Code of Conduct](CODE_OF_CONDUCT.md). In short:
+
+```bash
+pip install -e ".[dev]"
+pytest -q                 # tests
+ruff check spaf tests     # lint
+python -m build           # wheel
+```
+
+CI runs these on every push and pull request. Notable changes go in
+[CHANGELOG.md](CHANGELOG.md).
+
+**Releasing to PyPI** is automated via [Trusted Publishing](https://docs.pypi.org/trusted-publishers/):
+tag a version and push, and the `Release` workflow builds and publishes it.
+
+```bash
+git tag v1.0.1
+git push origin v1.0.1        # → builds, checks, and publishes to PyPI
+```
+
+> One-time setup: on PyPI, add a trusted publisher for this repo pointing at
+> the `release.yml` workflow and the `pypi` environment.
 
 ---
 

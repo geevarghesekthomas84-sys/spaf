@@ -3,15 +3,18 @@ import os
 import json
 import importlib.util
 from datetime import datetime
-from dotenv import load_dotenv
-load_dotenv()
+from dotenv import load_dotenv, find_dotenv
+# Load .env from the directory the user runs `spaf` in (usecwd=True), not from
+# the installed package location. Must run before spaf.database is imported so
+# SPAF_DB_BACKEND is honored by the backend selector.
+load_dotenv(find_dotenv(usecwd=True))
 import typer
 from typing import Optional, List
 from rich.console import Console
 from rich.table import Table
 
 from spaf.core.engine import ScanEngine
-from spaf.database.mongo import db
+from spaf.database import db
 from spaf.utils.validator import validate_target, sanitize_domain
 from spaf.utils.logger import logger
 
@@ -440,26 +443,70 @@ def remediate(
 def setup():
     """Interactive setup to create or update the .env configuration file."""
     console.print("[bold blue]SPAF Configuration Setup[/bold blue]")
-    
+
     config = {}
-    config["AI_PROVIDER"] = typer.prompt("Select AI Provider (google, claude, ollama, lmstudio)", default="google")
-    
-    if config["AI_PROVIDER"] == "google":
+
+    # ── AI provider ───────────────────────────────────────────────────
+    provider = typer.prompt(
+        "Select AI Provider (google, claude, ollama, lmstudio)", default="google"
+    ).strip().lower()
+    config["AI_PROVIDER"] = provider
+
+    if provider == "google":
         config["GOOGLE_API_KEY"] = typer.prompt("Enter Google API Key", hide_input=True)
-    elif config["AI_PROVIDER"] == "claude":
+    elif provider == "claude":
         config["ANTHROPIC_API_KEY"] = typer.prompt("Enter Anthropic API Key", hide_input=True)
-    
-    config["SPAF_MONGO_URI"] = typer.prompt("Enter MongoDB URI", default="mongodb://localhost:27017")
+    elif provider in ("ollama",):
+        config["OLLAMA_URL"] = typer.prompt(
+            "Enter Ollama server URL", default="http://localhost:11434/v1"
+        )
+        model = typer.prompt(
+            "Ollama model (leave blank to auto-detect)", default="", show_default=False
+        ).strip()
+        if model:
+            config["OLLAMA_MODEL"] = model
+    elif provider in ("lmstudio", "lm-studio", "lm_studio"):
+        config["AI_PROVIDER"] = "lmstudio"
+        config["LM_STUDIO_URL"] = typer.prompt(
+            "Enter LM Studio server URL", default="http://localhost:1234/v1"
+        )
+        model = typer.prompt(
+            "LM Studio model (leave blank to auto-detect)", default="", show_default=False
+        ).strip()
+        if model:
+            config["LM_STUDIO_MODEL"] = model
+
+    # ── Database backend ──────────────────────────────────────────────
+    backend = typer.prompt(
+        "Select database backend (mongodb, sqlite)", default="mongodb"
+    ).strip().lower()
+    if backend in ("sqlite", "sqlite3", "local", "file"):
+        config["SPAF_DB_BACKEND"] = "sqlite"
+        config["SPAF_SQLITE_PATH"] = typer.prompt(
+            "SQLite database file path", default="spaf.db"
+        )
+    else:
+        config["SPAF_DB_BACKEND"] = "mongo"
+        config["SPAF_MONGO_URI"] = typer.prompt(
+            "Enter MongoDB URI", default="mongodb://localhost:27017"
+        )
+        config["SPAF_MONGO_DB"] = typer.prompt("MongoDB database name", default="spaf")
+
+    # ── Stealth ───────────────────────────────────────────────────────
     config["USE_TOR"] = typer.confirm("Enable TOR routing by default?", default=False)
-    
+
     env_content = "\n".join([f"{k}={v}" for k, v in config.items()])
-    
+
     with open(".env", "w") as f:
         f.write("# SPAF Configuration\n")
         f.write(env_content)
         f.write("\nRANDOM_USER_AGENT=true\nSPAF_LOG_LEVEL=INFO\n")
-        
+
     console.print("[bold green]Configuration saved to .env[/bold green]")
+    if config["SPAF_DB_BACKEND"] == "sqlite":
+        console.print(
+            "[dim]Using the local SQLite backend — no MongoDB required.[/dim]"
+        )
 
 # NOTE: `test-ai` is defined once above via @app.command(name="test-ai") — the
 # detailed health-check with a status table. A second, simpler definition used

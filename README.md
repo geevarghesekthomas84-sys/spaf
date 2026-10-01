@@ -275,8 +275,14 @@ PROXY_FILE=./proxies.txt
 RANDOM_USER_AGENT=true
 
 # ─── Database ────────────────────────────────────────────────────
-SPAF_MONGO_URI=mongodb://localhost:27017
+SPAF_DB_BACKEND=mongo                      # mongo (default) | sqlite
+SPAF_MONGO_URI=mongodb://localhost:27017   # used when backend = mongo
+SPAF_SQLITE_PATH=spaf.db                   # used when backend = sqlite
 ```
+
+> **No MongoDB? Use the SQLite fallback.** Set `SPAF_DB_BACKEND=sqlite` (or pick
+> it in `spaf setup`) and SPAF stores everything in a local file — no database
+> server needed. Great for quick/offline use.
 
 ---
 

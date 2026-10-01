@@ -9,7 +9,7 @@ from rich.table import Table
 from rich.rule import Rule
 
 from spaf.utils.logger import logger
-from spaf.database.mongo import db
+from spaf.database import db
 from spaf.utils.proxy import proxy_manager
 
 console = Console()

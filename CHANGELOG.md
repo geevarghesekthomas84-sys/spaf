@@ -3,7 +3,23 @@
 All notable changes to SPAF are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [1.1.0]
+
+### Added
+- **SQLite storage backend** — a zero-setup offline fallback for MongoDB.
+  Select it with `SPAF_DB_BACKEND=sqlite` (file path via `SPAF_SQLITE_PATH`);
+  SPAF then runs with no database server required. New `spaf.database.sqlite`
+  backend and a `spaf.database` selector (`from spaf.database import db`).
+- **Expanded `spaf setup` wizard** — now prompts for the LM Studio / Ollama
+  server URL and model (blank = auto-detect), the database backend
+  (mongodb/sqlite) with the matching settings, and the MongoDB database name.
+
+### Fixed
+- `.env` was discovered relative to the installed package instead of the
+  directory `spaf` is run from, so a project-local `.env` loaded inconsistently;
+  it is now loaded from the current working directory (`find_dotenv(usecwd=True)`).
+
+## [1.0.0]
 
 ### Added
 - **PyPI release workflow** — pushing a `vX.Y.Z` tag builds and publishes to PyPI

@@ -2,7 +2,6 @@ import asyncio
 import os
 import xml.etree.ElementTree as ET
 from typing import Any, Dict, List
-from rich.table import Table
 from rich.progress import Progress
 
 from spaf.core.engine import BaseModule
@@ -318,29 +317,24 @@ class NetworkModule(BaseModule):
         return cve_list
 
     def render_results(self, results: List[Dict[str, Any]]):
+        from spaf.utils import ui
         if not results:
-            self.console.print("[yellow]No open ports found or scan failed.[/yellow]")
+            self.console.print(f"[{ui.FAINT}]No open ports found or scan failed.[/]")
             return
 
-        table = Table(title=f"Network Scan Results for {self.target}")
-        table.add_column("Port",     style="cyan")
-        table.add_column("Service",  style="magenta")
-        table.add_column("Product",  style="green")
-        table.add_column("Severity", style="bold")
+        table = ui.table(f"Network · {self.target}")
+        table.add_column("Port", style=ui.AMBER, justify="right")
+        table.add_column("Service", style=ui.STEEL)
+        table.add_column("Product", style="default")
+        table.add_column("Severity")
 
-        for r in results:
+        for r in sorted(results, key=lambda x: x.get("severity_order", 9)):
             extra   = r.get("extra", {})
-            port    = extra.get("port", "N/A")
-            service = extra.get("service", "unknown")
-            product = extra.get("product", "unknown")
-            sev     = r["severity"]
-            color   = (
-                "red"       if sev == "Critical" else
-                "orange3"   if sev == "High"     else
-                "yellow"    if sev == "Medium"   else
-                "cyan"      if sev == "Low"       else
-                "dim white"
+            table.add_row(
+                str(extra.get("port", "—")),
+                extra.get("service", "unknown"),
+                extra.get("product", "unknown"),
+                ui.severity_text(r["severity"]),
             )
-            table.add_row(str(port), service, product, f"[{color}]{sev}[/{color}]")
 
         self.console.print(table)

@@ -3,10 +3,7 @@ from typing import Any, Dict, Type, List
 from datetime import datetime
 from rich.console import Console
 from rich.live import Live
-from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeElapsedColumn
-from rich.table import Table
-from rich.rule import Rule
 
 from spaf.utils.logger import logger
 from spaf.database import db
@@ -20,18 +17,14 @@ class ScanEngine:
         self.console = console
 
     def _print_banner(self):
-        banner = """
- [bold green]
-  ██████  ██████   █████  ███████ 
- ██       ██   ██ ██   ██ ██      
-  ██████  ██████  ███████ █████   
-       ██ ██      ██   ██ ██      
-  ██████  ██      ██   ██ ██      
- [/bold green]
- [dim white]Smart Pentesting Automation Framework[/dim white]
- [bold blue]Developed by gg[/bold blue]
-        """
-        self.console.print(banner)
+        # Restraint: per-scan we show only the one-line lockup, not the wordmark.
+        from spaf.utils import ui
+        try:
+            from spaf.cli.main import get_version
+            version = get_version()
+        except Exception:
+            version = "dev"
+        self.console.print(ui.lockup(version, False))
 
     async def run_module(self, module_class: Type, target: str, options: Dict[str, Any]):
         """
@@ -48,14 +41,13 @@ class ScanEngine:
         start_time  = datetime.utcnow()
 
         # ── Scan Initialization Panel ─────────────────────────────────────
-        summary_table = Table.grid(padding=(0, 2))
-        summary_table.add_row("[cyan]Target:[/cyan]",         target)
-        summary_table.add_row("[cyan]Module:[/cyan]",         module_name.upper())
-        summary_table.add_row("[cyan]Start Time (UTC):[/cyan]", start_time.strftime("%Y-%m-%d %H:%M:%S"))
-
-        self.console.print(
-            Panel(summary_table, title="[bold white]Scan Initialization[/bold white]", border_style="blue")
-        )
+        from spaf.utils import ui
+        self.console.print(ui.kv(
+            [("target", target),
+             ("module", module_name.upper()),
+             ("started", start_time.strftime("%Y-%m-%d %H:%M:%S UTC"))],
+            title="Scan",
+        ))
 
         # ── Database ──────────────────────────────────────────────────────
         no_db   = options.get("no_db", False)
@@ -101,31 +93,25 @@ class ScanEngine:
         end_time = datetime.utcnow()
         duration = end_time - start_time
 
+        from spaf.utils import ui
         sev_counts = {"Critical": 0, "High": 0, "Medium": 0, "Low": 0, "Info": 0}
         for r in results:
             sev = r.get("severity", "Info")
             if sev in sev_counts:
                 sev_counts[sev] += 1
 
-        colors = {
-            "Critical": "bold red", "High": "orange3",
-            "Medium":   "yellow",   "Low":  "cyan",
-            "Info":     "dim white",
-        }
         sev_parts = [
-            f"[{colors[s]}]{s}: {c}[/{colors[s]}]"
+            f"[{ui.SEVERITY[s]}]{s} {c}[/]"
             for s, c in sev_counts.items() if c > 0
         ]
-        sev_str = " | ".join(sev_parts) if sev_parts else "[dim]None[/dim]"
+        sev_str = "  ".join(sev_parts) if sev_parts else f"[{ui.FAINT}]none[/]"
 
-        final_table = Table.grid(padding=(0, 2))
-        final_table.add_row("[cyan]Findings:[/cyan]",    sev_str)
-        final_table.add_row("[cyan]Elapsed Time:[/cyan]", str(duration).split(".")[0])
-        final_table.add_row("[cyan]Status:[/cyan]",       "[bold green]COMPLETED[/bold green]")
-
-        self.console.print(
-            Panel(final_table, title="[bold white]Scan Summary[/bold white]", border_style="green")
-        )
+        self.console.print(ui.kv(
+            [("findings", sev_str),
+             ("elapsed", str(duration).split(".")[0]),
+             ("status", f"[{ui.OK}]completed[/]")],
+            title="Summary", tone=ui.OK,
+        ))
 
         # ── AI Post-Scan Analysis ─────────────────────────────────────────
         no_ai = options.get("no_ai", False)
@@ -141,27 +127,24 @@ class ScanEngine:
         """
         # Lazy import to avoid circular dependency at module load time
         from spaf.utils.ai import ai_orchestrator
+        from spaf.utils import ui
 
         self.console.print()
-        self.console.print(Rule("[bold magenta]⚡ AI Threat Intelligence[/bold magenta]"))
+        self.console.print(ui.eyebrow("AI Threat Intelligence"))
         self.console.print(
-            f"[dim]Sending {len(results)} finding(s) to {ai_orchestrator.provider.upper()} "
-            f"for module-specific analysis…[/dim]\n"
+            f"[{ui.FAINT}]Analyzing {len(results)} finding(s) via "
+            f"{ai_orchestrator.provider.upper()}…[/]\n"
         )
 
         with self.console.status(
-            "[bold magenta]AI is analyzing findings…[/bold magenta]", spinner="dots"
+            f"[{ui.AMBER}]Thinking…[/]", spinner="dots"
         ):
             analysis = await ai_orchestrator.analyze_module(module_name, results)
 
-        self.console.print(
-            Panel(
-                analysis,
-                title=f"[bold magenta]🤖 AI Analysis — {module_name.upper()} / {target}[/bold magenta]",
-                border_style="magenta",
-                padding=(1, 2),
-            )
-        )
+        self.console.print(ui.panel(
+            analysis,
+            title=f"Analysis · {module_name.upper()} · {target}",
+        ))
         self.console.print()
 
 

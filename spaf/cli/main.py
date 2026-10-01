@@ -78,19 +78,9 @@ def load_targets(target_arg: str) -> List[str]:
             return [line.strip() for line in f if line.strip()]
     return [target_arg]
 
-def print_banner():
-    status = "[bold green]ONLINE[/bold green]" if auth_manager.is_logged_in() else "[bold yellow]OFFLINE[/bold yellow]"
-    banner = f"""[bold green]
-  ██████  ██████   █████  ███████ 
-  ██       ██   ██ ██   ██ ██      
-  ██████  ██████  ███████ █████   
-       ██ ██      ██   ██ ██      
-  ██████  ██      ██   ██ ██      
-  [/bold green]
-  [dim white]Smart Pentesting Automation Framework[/dim white] [dim]v{get_version()}[/dim] | Status: {status}
-  [bold blue]Developed by gg[/bold blue]
-    """
-    console.print(banner)
+def print_banner(compact: bool = False):
+    from spaf.utils import ui
+    console.print(ui.banner(get_version(), auth_manager.is_logged_in(), compact=compact))
 
 def load_plugins(app_instance: typer.Typer):
     """Dynamically loads plugins from the 'plugins' directory."""
@@ -475,11 +465,11 @@ def remediate(
 
 def _section(title: str, subtitle: str = ""):
     """Print a styled section header for the setup wizard."""
-    from rich.rule import Rule
+    from spaf.utils import ui
     console.print()
-    console.print(Rule(f"[bold cyan]{title}[/bold cyan]", style="cyan"))
+    console.print(ui.eyebrow(title))
     if subtitle:
-        console.print(f"[dim]{subtitle}[/dim]")
+        console.print(f"[{ui.FAINT}]{subtitle}[/]")
 
 
 def _provision_mongodb(uri: str) -> bool:
@@ -551,13 +541,14 @@ def _provision_sqlite(path: str) -> bool:
 @app.command()
 def setup():
     """Interactive, guided setup — writes your .env and can provision the database locally."""
-    from rich.table import Table as _Table
+    from spaf.utils import ui
+    from rich.text import Text as _Text
 
-    console.print(Panel.fit(
-        f"[bold green]SPAF[/bold green] [dim]v{get_version()}[/dim]\n"
-        "[white]Smart Pentesting Automation Framework — configuration wizard[/white]",
-        border_style="green",
-    ))
+    _body = _Text()
+    _body.append("SPAF", style=f"bold {ui.AMBER}")
+    _body.append(f"  v{get_version()}\n", style=ui.STEEL)
+    _body.append("configuration wizard", style=ui.FAINT)
+    console.print(ui.fit_panel(_body))
 
     config = {}
 
@@ -620,24 +611,22 @@ def setup():
         f.write("\nRANDOM_USER_AGENT=true\nSPAF_LOG_LEVEL=INFO\n")
 
     # ── Summary ───────────────────────────────────────────────────────
-    summary = _Table(title="Configuration Summary", show_header=False, title_style="bold green")
-    summary.add_column("Setting", style="cyan")
-    summary.add_column("Value", style="white")
-    summary.add_row("AI provider", config.get("AI_PROVIDER", "—"))
+    rows = [("AI provider", config.get("AI_PROVIDER", "—"))]
     if config["SPAF_DB_BACKEND"] == "sqlite":
-        summary.add_row("Database", "SQLite ([green]no server needed[/green])")
-        summary.add_row("DB path", config.get("SPAF_SQLITE_PATH", "spaf.db"))
+        rows.append(("database", f"SQLite  [{ui.FAINT}]no server[/]"))
+        rows.append(("db path", config.get("SPAF_SQLITE_PATH", "spaf.db")))
     else:
-        summary.add_row("Database", "MongoDB")
-        summary.add_row("Mongo URI", config.get("SPAF_MONGO_URI", "—"))
-    summary.add_row("TOR", "on" if config.get("USE_TOR") else "off")
-    summary.add_row("Saved to", os.path.abspath(".env"))
+        rows.append(("database", "MongoDB"))
+        rows.append(("mongo uri", config.get("SPAF_MONGO_URI", "—")))
+    rows.append(("tor", "on" if config.get("USE_TOR") else "off"))
+    rows.append(("saved to", os.path.abspath(".env")))
 
     console.print()
-    console.print(Panel(summary, border_style="green"))
+    console.print(ui.kv(rows, title="Configuration", tone=ui.OK))
     console.print(
-        "[bold green]✓ Setup complete.[/bold green] "
-        "[dim]Next: [/dim][cyan]spaf test-ai[/cyan][dim]  then  [/dim][cyan]spaf tools --install[/cyan]"
+        f"[{ui.OK}]✓ Setup complete.[/]  "
+        f"[{ui.FAINT}]Next:[/] [{ui.AMBER}]spaf test-ai[/]"
+        f"[{ui.FAINT}]  then  [/][{ui.AMBER}]spaf tools --install[/]"
     )
 
 # NOTE: `test-ai` is defined once above via @app.command(name="test-ai") — the
@@ -937,17 +926,18 @@ def tools(
     import shutil
 
     def render_table():
-        table = Table(title="SPAF External Recon Toolkit", show_header=True, header_style="bold white")
-        table.add_column("Tool", style="cyan")
+        from spaf.utils import ui
+        table = ui.table("Recon Toolkit")
+        table.add_column("Tool", style=ui.AMBER)
         table.add_column("Installed", justify="center")
-        table.add_column("Role", style="white")
-        table.add_column("Source", style="dim")
+        table.add_column("Role", style="default")
+        table.add_column("Source", style=ui.FAINT)
         miss = []
         for name, meta in TOOL_REGISTRY.items():
             ok = shutil.which(name) is not None
             if not ok:
                 miss.append(name)
-            status = "[bold green]✓[/bold green]" if ok else "[bold red]✗[/bold red]"
+            status = f"[{ui.OK}]●[/]" if ok else f"[{ui.FAINT}]○[/]"
             table.add_row(name, status, meta["role"], meta["url"])
         console.print(table)
         return miss
@@ -1034,7 +1024,7 @@ def agent(
     from spaf.agent import PentestAgent
     from spaf.agent.orchestrator import ACTIVE_ACTIONS
     from spaf.utils.scope import load_scope, has_scope, is_in_scope
-    from rich.rule import Rule
+    from spaf.utils import ui
 
     print_banner()
 
@@ -1071,16 +1061,16 @@ def agent(
         with console.status("[bold magenta]Agent is planning the assessment…[/bold magenta]"):
             steps = await ag.plan()
 
-        plan_table = Table(title=f"Assessment Plan — {target}", header_style="bold white")
-        plan_table.add_column("#", style="dim", width=3)
-        plan_table.add_column("Module", style="cyan")
-        plan_table.add_column("Why", style="white")
+        plan_table = ui.table(f"Assessment Plan · {target}")
+        plan_table.add_column("#", style=ui.FAINT, width=3, justify="right")
+        plan_table.add_column("Module", style=ui.AMBER)
+        plan_table.add_column("Why", style="default", overflow="fold")
         plan_table.add_column("Scope", justify="center")
         for i, s in enumerate(steps, 1):
             blocked = ag.scope_blocks(s["module"])
             plan_table.add_row(
                 str(i), s["module"], s.get("reason", "") or "—",
-                "[red]skip[/red]" if blocked else "[green]ok[/green]",
+                f"[{ui.DANGER}]skip[/]" if blocked else f"[{ui.OK}]ok[/]",
             )
         console.print(plan_table)
 
@@ -1102,22 +1092,22 @@ def agent(
         findings = await ag.execute(engine, steps)
 
         # 4) Final assessment
+        from spaf.utils import ui as _ui
         console.print()
-        console.print(Rule("[bold magenta]⚡ Agent Assessment[/bold magenta]"))
+        console.print(_ui.eyebrow("Agent Assessment"))
         if findings:
             sev = {"Critical": 0, "High": 0, "Medium": 0, "Low": 0, "Info": 0}
             for f in findings:
                 sev[f.get("severity", "Info")] = sev.get(f.get("severity", "Info"), 0) + 1
+            parts = [f"[{_ui.SEVERITY[k]}]{k} {v}[/]" for k, v in sev.items() if v]
             console.print(
-                f"[bold]{len(findings)} finding(s):[/bold] "
-                + " | ".join(f"{k}: {v}" for k, v in sev.items() if v)
+                f"[bold]{len(findings)}[/bold] [dim]finding(s)[/dim]   " + "  ".join(parts)
             )
             summary = await ag.summarize()
             if summary:
-                console.print(Panel(summary, title=f"🤖 AI Assessment — {target}",
-                                    border_style="magenta", padding=(1, 2)))
+                console.print(_ui.panel(summary, title=f"AI Assessment · {target}"))
         else:
-            console.print("[yellow]No findings produced.[/yellow]")
+            console.print(f"[{_ui.FAINT}]No findings produced.[/]")
 
         if output:
             with open(output, "w") as f:

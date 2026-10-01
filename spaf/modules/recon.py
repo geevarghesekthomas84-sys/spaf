@@ -6,7 +6,6 @@ import dns.zone
 import dns.query
 import whois
 from typing import Any, Dict, List
-from rich.table import Table
 from rich.progress import Progress
 
 from spaf.core.engine import BaseModule
@@ -202,19 +201,18 @@ class ReconModule(BaseModule):
         return findings
 
     def render_results(self, results: List[Dict[str, Any]]):
+        from spaf.utils import ui
         if not results:
-            self.console.print("[yellow]No security findings identified in recon.[/yellow]")
+            self.console.print(f"[{ui.FAINT}]No recon findings.[/]")
             return
 
-        table = Table(title="Passive Reconnaissance Findings")
-        table.add_column("Type", style="cyan")
-        table.add_column("Severity", style="bold")
-        table.add_column("Detail", style="white")
+        table = ui.table("Reconnaissance")
+        table.add_column("Type", style=ui.AMBER)
+        table.add_column("Severity")
+        table.add_column("Detail", style="default", overflow="fold")
 
-        for r in results:
-            sev = r['severity']
-            color = "red" if sev == "Critical" else "orange3" if sev == "High" else "yellow" if sev == "Medium" else "cyan"
-            table.add_row(r['vuln_type'], f"[{color}]{sev}[/{color}]", r['detail'])
+        for r in sorted(results, key=lambda x: x.get("severity_order", 9)):
+            table.add_row(r["vuln_type"], ui.severity_text(r["severity"]), r["detail"])
 
         self.console.print(table)
 

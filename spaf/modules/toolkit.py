@@ -31,7 +31,6 @@ from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse
 
 from rich.progress import Progress
-from rich.table import Table
 
 from spaf.core.engine import BaseModule
 from spaf.utils.risk import build_finding
@@ -455,23 +454,21 @@ class ToolkitModule(BaseModule):
         )
 
     def render_results(self, results: List[Dict[str, Any]]):
+        from spaf.utils import ui
         if not results:
-            self.console.print("[yellow]No findings produced by the recon toolkit.[/yellow]")
+            self.console.print(f"[{ui.FAINT}]No findings produced by the recon toolkit.[/]")
             return
 
-        table = Table(title="Recon Toolkit Findings")
-        table.add_column("Target", style="cyan", overflow="fold")
-        table.add_column("Type", style="magenta")
-        table.add_column("Severity", style="bold")
-        table.add_column("Detail", style="white", overflow="fold")
+        table = ui.table("Recon Toolkit")
+        table.add_column("Target", style=ui.STEEL, overflow="fold")
+        table.add_column("Type", style=ui.AMBER)
+        table.add_column("Severity")
+        table.add_column("Detail", style="default", overflow="fold")
 
         order = {"Critical": 1, "High": 2, "Medium": 3, "Low": 4, "Info": 5}
         for r in sorted(results, key=lambda x: order.get(x["severity"], 9)):
-            sev = r["severity"]
-            color = ("red" if sev == "Critical" else "orange3" if sev == "High"
-                     else "yellow" if sev == "Medium" else "cyan" if sev == "Low" else "dim white")
             table.add_row(
                 r["target"][:60], r["vuln_type"],
-                f"[{color}]{sev}[/{color}]", r["detail"][:90],
+                ui.severity_text(r["severity"]), r["detail"][:90],
             )
         self.console.print(table)

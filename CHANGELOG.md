@@ -3,6 +3,19 @@
 All notable changes to SPAF are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.4.0]
+
+### Changed
+- **Premium CLI redesign.** A single design system (`spaf/utils/ui.py`): one
+  signature accent (molten amber `#E0A82E`) on a steel monochrome base, with
+  severity colors reserved strictly for findings. New one-line brand lockup
+  (`◇ SPAF · red-team automation · vX · ● status`) reused across commands, a
+  single-tone amber wordmark, hairline tables, soft panels, and letter-spaced
+  section rules. Banner, scan init/summary, AI-analysis panel, setup wizard,
+  the agent plan/assessment, `spaf tools`, and every module's results table now
+  share the same look. Per-scan output shows only the compact lockup (the full
+  wordmark is reserved for top-level commands).
+
 ## [1.3.0]
 
 ### Added

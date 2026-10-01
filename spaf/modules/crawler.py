@@ -1,7 +1,6 @@
 from urllib.parse import urljoin, urlparse
 from bs4 import BeautifulSoup
 from typing import Any, Dict, List
-from rich.table import Table
 from rich.progress import Progress
 
 from spaf.core.engine import BaseModule
@@ -90,18 +89,17 @@ class CrawlerModule(BaseModule):
         return findings
 
     def render_results(self, results: List[Dict[str, Any]]):
+        from spaf.utils import ui
         if not results:
-            self.console.print("[yellow]No interesting findings identified during crawl.[/yellow]")
+            self.console.print(f"[{ui.FAINT}]No crawl findings.[/]")
             return
 
-        table = Table(title="Web Crawler Findings")
-        table.add_column("Location", style="cyan")
-        table.add_column("Type", style="magenta")
-        table.add_column("Severity", style="bold")
+        table = ui.table("Crawler")
+        table.add_column("Location", style=ui.STEEL, overflow="fold")
+        table.add_column("Type", style=ui.AMBER)
+        table.add_column("Severity")
 
-        for r in results:
-            sev = r['severity']
-            color = "red" if sev == "Critical" else "orange3" if sev == "High" else "yellow" if sev == "Medium" else "cyan"
-            table.add_row(r['target'], r['vuln_type'], f"[{color}]{sev}[/{color}]")
+        for r in sorted(results, key=lambda x: x.get("severity_order", 9)):
+            table.add_row(r["target"], r["vuln_type"], ui.severity_text(r["severity"]))
 
         self.console.print(table)

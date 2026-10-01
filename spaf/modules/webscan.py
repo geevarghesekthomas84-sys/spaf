@@ -3,7 +3,6 @@ import aiohttp
 import ssl
 from datetime import datetime
 from typing import Any, Dict, List
-from rich.table import Table
 from rich.progress import Progress
 
 from spaf.core.engine import BaseModule
@@ -229,18 +228,17 @@ class WebscanModule(BaseModule):
         return findings
 
     def render_results(self, results: List[Dict[str, Any]]):
+        from spaf.utils import ui
         if not results:
-            self.console.print("[yellow]No web security findings identified.[/yellow]")
+            self.console.print(f"[{ui.FAINT}]No web security findings.[/]")
             return
 
-        table = Table(title="Web Security Scan Findings")
-        table.add_column("Finding Type", style="cyan")
-        table.add_column("Severity", style="bold")
-        table.add_column("Detail", style="white")
+        table = ui.table("Web Security")
+        table.add_column("Finding", style=ui.AMBER)
+        table.add_column("Severity")
+        table.add_column("Detail", style="default", overflow="fold")
 
-        for r in results:
-            sev = r['severity']
-            color = "red" if sev == "Critical" else "orange3" if sev == "High" else "yellow" if sev == "Medium" else "cyan" if sev == "Low" else "dim white"
-            table.add_row(r['vuln_type'], f"[{color}]{sev}[/{color}]", r['detail'])
+        for r in sorted(results, key=lambda x: x.get("severity_order", 9)):
+            table.add_row(r["vuln_type"], ui.severity_text(r["severity"]), r["detail"])
 
         self.console.print(table)

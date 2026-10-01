@@ -115,6 +115,36 @@ spaf crawl https://target.com --no-ai          # Skip AI analysis
 
 ---
 
+### `spaf agent <target>` — Autonomous Agent
+
+The AI plans an ordered sequence of SPAF modules, runs them on your host, and
+writes one consolidated AI assessment at the end. The AI only chooses **which
+built-in modules** to run (never arbitrary commands). Active steps are
+scope-gated and ask for confirmation first.
+
+```bash
+spaf agent example.com                         # plan → confirm → run → assess
+spaf agent example.com --goal "find web vulns" # steer the plan
+spaf agent example.com --dry-run               # show the plan only
+spaf agent example.com --aggressive -y         # deeper settings, no prompt
+spaf agent https://example.com --no-ai         # default playbook, no AI
+spaf agent example.com --output findings.json
+```
+
+| Flag | Default | Description |
+|---|---|---|
+| `--goal` / `-g` | — | Natural-language objective that steers planning |
+| `--dry-run` | off | Show the plan and exit |
+| `--yes` / `-y` | off | Skip the confirmation prompt |
+| `--aggressive` | off | Aggressive nmap, nuclei DAST, active recon |
+| `--scope-file` | `scope.json` | Engagement scope for active steps |
+| `--ignore-scope` | off | Disable scope enforcement (dangerous) |
+| `--output <file>` | — | Save all findings as JSON |
+| `--no-ai` | off | Skip AI planning/assessment (default playbook) |
+| `--no-db` | off | Run without database logging |
+
+---
+
 ### `spaf toolkit <target>` — External Recon Pipeline
 
 Runs a chained pipeline of best-in-class open-source recon binaries, feeding each

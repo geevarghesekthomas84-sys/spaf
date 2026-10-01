@@ -3,6 +3,18 @@
 All notable changes to SPAF are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.3.0]
+
+### Added
+- **Autonomous agent (`spaf agent <target>`)** — the configured AI plans an
+  ordered sequence of SPAF modules (recon → toolkit → webscan → crawl → scan),
+  the agent runs them on the host, accumulates findings, and writes a single
+  consolidated AI assessment. The AI only chooses *which* built-in modules run
+  (never arbitrary commands). Flags: `--goal`, `--dry-run`, `--yes`,
+  `--aggressive`, `--scope-file`/`--ignore-scope`, `--output`, `--no-ai`,
+  `--no-db`. Active steps are scope-gated and require confirmation; `--no-ai`
+  falls back to a default playbook.
+
 ## [1.2.0]
 
 ### Added

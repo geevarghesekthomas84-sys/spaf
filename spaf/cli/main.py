@@ -1018,6 +1018,116 @@ def _install_tools(missing: list, force: bool):
 
 
 @app.command()
+def agent(
+    target: str           = typer.Argument(..., help="Target domain, IP, or URL"),
+    goal: str             = typer.Option("", "--goal", "-g", help="Natural-language objective for the assessment"),
+    yes: bool             = typer.Option(False, "--yes", "-y", help="Run the plan without the confirmation prompt"),
+    dry_run: bool         = typer.Option(False, "--dry-run", help="Show the plan and exit without running anything"),
+    aggressive: bool      = typer.Option(False, "--aggressive", help="Deeper/active settings (aggressive nmap, nuclei DAST, active recon)"),
+    scope_file: str       = typer.Option("scope.json", "--scope-file", help="Engagement scope file for active steps"),
+    ignore_scope: bool    = typer.Option(False, "--ignore-scope", help="Disable scope enforcement (dangerous)"),
+    output: Optional[str] = typer.Option(None, "--output", help="Save all findings to a JSON file"),
+    no_db: bool           = typer.Option(False, "--no-db", help="Run without database logging"),
+    no_ai: bool           = typer.Option(False, "--no-ai", help="Skip AI planning and the final assessment (uses the default playbook)"),
+):
+    """Autonomous agent — the AI plans and chains SPAF modules to assess a target end-to-end."""
+    from spaf.agent import PentestAgent
+    from spaf.agent.orchestrator import ACTIVE_ACTIONS
+    from spaf.utils.scope import load_scope, has_scope, is_in_scope
+    from rich.rule import Rule
+
+    print_banner()
+
+    # Scope setup (gates active steps).
+    scope_data = load_scope(scope_file)
+    if ignore_scope:
+        console.print("[bold red]⚠ Scope enforcement disabled (--ignore-scope).[/bold red]")
+        scope_data = None
+    elif has_scope(scope_data) and not is_in_scope(target, scope_data):
+        console.print(
+            f"[bold red]✗ {target} is out of engagement scope[/bold red] "
+            f"[dim]({scope_file}). Add it with 'spaf scope add', or use --ignore-scope.[/dim]"
+        )
+        raise typer.Exit(1)
+
+    options = {
+        "no_db": no_db, "no_ai": no_ai, "aggressive": aggressive, "scope": scope_data,
+    }
+
+    async def run():
+        if not no_db:
+            try:
+                await _init_db()
+            except ConnectionError:
+                console.print(
+                    "[bold red]Database Error:[/bold red] Could not connect. "
+                    "Use --no-db, or run 'spaf setup' and pick the SQLite backend."
+                )
+                raise typer.Exit(1)
+
+        ag = PentestAgent(target, goal, options, console)
+
+        # 1) Plan
+        with console.status("[bold magenta]Agent is planning the assessment…[/bold magenta]"):
+            steps = await ag.plan()
+
+        plan_table = Table(title=f"Assessment Plan — {target}", header_style="bold white")
+        plan_table.add_column("#", style="dim", width=3)
+        plan_table.add_column("Module", style="cyan")
+        plan_table.add_column("Why", style="white")
+        plan_table.add_column("Scope", justify="center")
+        for i, s in enumerate(steps, 1):
+            blocked = ag.scope_blocks(s["module"])
+            plan_table.add_row(
+                str(i), s["module"], s.get("reason", "") or "—",
+                "[red]skip[/red]" if blocked else "[green]ok[/green]",
+            )
+        console.print(plan_table)
+
+        if dry_run:
+            console.print("[dim]--dry-run: not executing. Re-run without it to proceed.[/dim]")
+            return
+
+        # 2) Confirm (active steps touch the target)
+        if not yes:
+            active = [s["module"] for s in steps
+                      if s["module"] in ACTIVE_ACTIONS and not ag.scope_blocks(s["module"])]
+            msg = ("This will actively scan the target"
+                   if active else "This will run passive steps only")
+            if not typer.confirm(f"{msg}. Proceed? (authorized targets only)", default=False):
+                console.print("[yellow]Aborted.[/yellow]")
+                return
+
+        # 3) Execute
+        findings = await ag.execute(engine, steps)
+
+        # 4) Final assessment
+        console.print()
+        console.print(Rule("[bold magenta]⚡ Agent Assessment[/bold magenta]"))
+        if findings:
+            sev = {"Critical": 0, "High": 0, "Medium": 0, "Low": 0, "Info": 0}
+            for f in findings:
+                sev[f.get("severity", "Info")] = sev.get(f.get("severity", "Info"), 0) + 1
+            console.print(
+                f"[bold]{len(findings)} finding(s):[/bold] "
+                + " | ".join(f"{k}: {v}" for k, v in sev.items() if v)
+            )
+            summary = await ag.summarize()
+            if summary:
+                console.print(Panel(summary, title=f"🤖 AI Assessment — {target}",
+                                    border_style="magenta", padding=(1, 2)))
+        else:
+            console.print("[yellow]No findings produced.[/yellow]")
+
+        if output:
+            with open(output, "w") as f:
+                json.dump(findings, f, indent=4, default=str)
+            console.print(f"[green]Findings saved to:[/green] {output}")
+
+    asyncio.run(run())
+
+
+@app.command()
 def report(
     target: Optional[str] = typer.Argument(None, help="Target to generate report for"),
     format: str = typer.Option("both", "--format", help="Report format: html|json|both"),

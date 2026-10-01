@@ -291,6 +291,11 @@ SPAF_SQLITE_PATH=spaf.db                   # used when backend = sqlite
 > 📖 **Full command reference with all flags and examples → [COMMANDS.md](COMMANDS.md)**
 
 ```bash
+# ─── Autonomous Agent (AI plans & chains the modules) ────────────
+spaf agent target.com                                # plan → confirm → run → AI assessment
+spaf agent target.com --goal "find web vulns" -y     # steer it, skip the prompt
+spaf agent target.com --dry-run                      # preview the plan only
+
 # ─── Reconnaissance ──────────────────────────────────────────────
 spaf recon target.com                                # Recon + AI + Shodan (if key set)
 spaf recon target.com --passive --no-ai              # Passive OSINT only
@@ -458,6 +463,7 @@ spaf/
 ├── spaf/
 │   ├── cli/          # Typer CLI — all commands
 │   ├── core/         # Async engine & BaseModule
+│   ├── agent/        # autonomous AI orchestrator (spaf agent)
 │   ├── modules/      # recon, network, webscan, crawler, toolkit
 │   ├── utils/        # AI orchestrator, proxy, risk, validator, scope, logger
 │   ├── database/     # MongoDB async driver (Motor) with full indexes

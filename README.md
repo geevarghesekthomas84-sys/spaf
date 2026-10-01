@@ -48,6 +48,45 @@ spaf agent target.com         # the AI plans → runs → reports, end to end
 
 ---
 
+## ◇ How it works
+
+One target in, a written assessment out. The agent plans the steps, scope-gates
+anything active, runs the modules on your machine, then lets the AI write it up.
+
+```mermaid
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'JetBrains Mono, ui-monospace, monospace','primaryColor':'#04150a','primaryTextColor':'#39FF41','primaryBorderColor':'#2ea043','lineColor':'#2ea043','clusterBkg':'#0d1117','clusterBorder':'#1f6f33'}}}%%
+flowchart TD
+  T([ target ]):::hot --> A{{ AI plans the assessment }}:::hot
+  A --> SC[/ scope check /]:::dim
+
+  SC --> R[recon<br/>subdomains · DNS · WHOIS]:::box
+  SC --> TK
+  SC --> W[web audit<br/>headers · TLS · paths]:::box
+  SC --> N[network<br/>nmap · CVE mapping]:::box
+
+  subgraph TK [recon toolkit]
+    direction LR
+    s1[subfinder<br/>assetfinder] --> s2[dnsx] --> s3[httpx] --> s4[katana<br/>hakrawler] --> s5[wayback<br/>gau] --> s6[ffuf] --> s7[nuclei]
+  end
+
+  R --> F[( findings )]:::hot
+  TK --> F
+  W --> F
+  N --> F
+
+  F --> DB[( MongoDB / SQLite )]:::dim
+  F --> AI[[ AI assessment ]]:::hot
+  AI --> REP[report<br/>HTML · JSON · CSV]:::hot
+
+  classDef hot fill:#04150a,stroke:#39FF41,color:#39FF41,stroke-width:1px;
+  classDef box fill:#0d1117,stroke:#2ea043,color:#8CF5A0;
+  classDef dim fill:#0d1117,stroke:#1f6f33,color:#5CE47A;
+```
+
+<sub>Run the whole chain with <code>spaf agent target.com</code>, or any single stage on its own (<code>spaf recon</code>, <code>spaf toolkit</code>, <code>spaf scan</code>, …).</sub>
+
+---
+
 ## ◇ Core feature set
 
 <table width="100%">

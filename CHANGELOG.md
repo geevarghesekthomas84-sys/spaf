@@ -3,6 +3,17 @@
 All notable changes to SPAF are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.2.0]
+
+### Added
+- **`--version` / `-V` flag** and the running version is now shown in the banner
+  and the setup wizard header.
+- **Redesigned `spaf setup`** — a guided, sectioned wizard (AI → Database →
+  Stealth) with styled panels and a configuration summary table.
+- **Local database provisioning from setup** — SQLite is initialized in place
+  (no server), and MongoDB can be auto-provisioned via Docker (`mongo:7`
+  container), with an offer to fall back to SQLite if it can't be reached.
+
 ## [1.1.0]
 
 ### Added

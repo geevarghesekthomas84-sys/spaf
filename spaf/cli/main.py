@@ -1,6 +1,7 @@
 import asyncio
 import os
 import json
+import time
 import importlib.util
 from datetime import datetime
 from dotenv import load_dotenv, find_dotenv
@@ -37,6 +38,39 @@ app = typer.Typer(
 console = Console()
 engine = ScanEngine()
 
+
+def get_version() -> str:
+    """Return the installed SPAF version (falls back gracefully)."""
+    try:
+        from importlib.metadata import version, PackageNotFoundError
+        try:
+            return version("spaf")
+        except PackageNotFoundError:
+            return "dev"
+    except Exception:
+        return "dev"
+
+
+__version__ = get_version()
+
+
+def _version_callback(value: bool):
+    if value:
+        console.print(f"[bold green]SPAF[/bold green] version [cyan]{get_version()}[/cyan]")
+        raise typer.Exit()
+
+
+@app.callback()
+def _main(
+    version: bool = typer.Option(
+        False, "--version", "-V",
+        help="Show the SPAF version and exit.",
+        callback=_version_callback, is_eager=True,
+    ),
+):
+    """Smart Pentesting Automation Framework (SPAF)."""
+    pass
+
 def load_targets(target_arg: str) -> List[str]:
     """Loads targets from a file or returns a list with a single target."""
     if os.path.isfile(target_arg):
@@ -53,7 +87,7 @@ def print_banner():
        ██ ██      ██   ██ ██      
   ██████  ██      ██   ██ ██      
   [/bold green]
-  [dim white]Smart Pentesting Automation Framework[/dim white] | Status: {status}
+  [dim white]Smart Pentesting Automation Framework[/dim white] [dim]v{get_version()}[/dim] | Status: {status}
   [bold blue]Developed by gg[/bold blue]
     """
     console.print(banner)
@@ -439,74 +473,172 @@ def remediate(
             
     asyncio.run(run())
 
+def _section(title: str, subtitle: str = ""):
+    """Print a styled section header for the setup wizard."""
+    from rich.rule import Rule
+    console.print()
+    console.print(Rule(f"[bold cyan]{title}[/bold cyan]", style="cyan"))
+    if subtitle:
+        console.print(f"[dim]{subtitle}[/dim]")
+
+
+def _provision_mongodb(uri: str) -> bool:
+    """
+    Best-effort local MongoDB provisioning via Docker.
+    Returns True if MongoDB appears reachable afterwards.
+    """
+    import shutil
+    import subprocess
+    import socket
+    from urllib.parse import urlparse
+
+    def _reachable() -> bool:
+        try:
+            p = urlparse(uri)
+            host = p.hostname or "localhost"
+            port = p.port or 27017
+            with socket.create_connection((host, port), timeout=2):
+                return True
+        except Exception:
+            return False
+
+    if _reachable():
+        console.print("[green]✓ MongoDB is already running and reachable.[/green]")
+        return True
+
+    if not shutil.which("docker"):
+        console.print(
+            "[yellow]Docker not found.[/yellow] Install Docker to auto-provision MongoDB, "
+            "or start MongoDB yourself. [dim]Falling back — you can switch to the SQLite "
+            "backend for a zero-setup local database.[/dim]"
+        )
+        return False
+
+    console.print("[cyan]Starting a local MongoDB container (mongo:7) via Docker…[/cyan]")
+    # Reuse an existing container if present, else create one.
+    subprocess.run(["docker", "start", "spaf-mongo"], capture_output=True, text=True)
+    if not _reachable():
+        subprocess.run(
+            ["docker", "run", "-d", "--name", "spaf-mongo",
+             "-p", "27017:27017", "--restart", "unless-stopped", "mongo:7"],
+            capture_output=True, text=True,
+        )
+    # Give it a moment to accept connections.
+    for _ in range(10):
+        if _reachable():
+            console.print("[bold green]✓ Local MongoDB is up on port 27017.[/bold green]")
+            return True
+        time.sleep(1)
+    console.print("[yellow]MongoDB container started but not reachable yet — give it a few seconds.[/yellow]")
+    return False
+
+
+def _provision_sqlite(path: str) -> bool:
+    """SQLite needs no server — just make sure the file/dir is writable."""
+    import sqlite3
+    try:
+        d = os.path.dirname(os.path.abspath(path))
+        os.makedirs(d, exist_ok=True)
+        con = sqlite3.connect(path)
+        con.close()
+        console.print(f"[bold green]✓ SQLite ready at {os.path.abspath(path)} (no server needed).[/bold green]")
+        return True
+    except Exception as exc:
+        console.print(f"[red]Could not initialize SQLite at {path}: {exc}[/red]")
+        return False
+
+
 @app.command()
 def setup():
-    """Interactive setup to create or update the .env configuration file."""
-    console.print("[bold blue]SPAF Configuration Setup[/bold blue]")
+    """Interactive, guided setup — writes your .env and can provision the database locally."""
+    from rich.table import Table as _Table
+
+    console.print(Panel.fit(
+        f"[bold green]SPAF[/bold green] [dim]v{get_version()}[/dim]\n"
+        "[white]Smart Pentesting Automation Framework — configuration wizard[/white]",
+        border_style="green",
+    ))
 
     config = {}
 
     # ── AI provider ───────────────────────────────────────────────────
+    _section("1 · AI Provider", "Pick the engine that analyzes your findings.")
     provider = typer.prompt(
-        "Select AI Provider (google, claude, ollama, lmstudio)", default="google"
+        "AI provider (google / claude / ollama / lmstudio)", default="google"
     ).strip().lower()
     config["AI_PROVIDER"] = provider
 
     if provider == "google":
-        config["GOOGLE_API_KEY"] = typer.prompt("Enter Google API Key", hide_input=True)
+        config["GOOGLE_API_KEY"] = typer.prompt("  Google API key", hide_input=True)
     elif provider == "claude":
-        config["ANTHROPIC_API_KEY"] = typer.prompt("Enter Anthropic API Key", hide_input=True)
-    elif provider in ("ollama",):
-        config["OLLAMA_URL"] = typer.prompt(
-            "Enter Ollama server URL", default="http://localhost:11434/v1"
-        )
-        model = typer.prompt(
-            "Ollama model (leave blank to auto-detect)", default="", show_default=False
-        ).strip()
+        config["ANTHROPIC_API_KEY"] = typer.prompt("  Anthropic API key", hide_input=True)
+    elif provider == "ollama":
+        config["OLLAMA_URL"] = typer.prompt("  Ollama server URL", default="http://localhost:11434/v1")
+        model = typer.prompt("  Ollama model (blank = auto-detect)", default="", show_default=False).strip()
         if model:
             config["OLLAMA_MODEL"] = model
     elif provider in ("lmstudio", "lm-studio", "lm_studio"):
         config["AI_PROVIDER"] = "lmstudio"
-        config["LM_STUDIO_URL"] = typer.prompt(
-            "Enter LM Studio server URL", default="http://localhost:1234/v1"
-        )
-        model = typer.prompt(
-            "LM Studio model (leave blank to auto-detect)", default="", show_default=False
-        ).strip()
+        config["LM_STUDIO_URL"] = typer.prompt("  LM Studio server URL", default="http://localhost:1234/v1")
+        model = typer.prompt("  LM Studio model (blank = auto-detect)", default="", show_default=False).strip()
         if model:
             config["LM_STUDIO_MODEL"] = model
 
     # ── Database backend ──────────────────────────────────────────────
-    backend = typer.prompt(
-        "Select database backend (mongodb, sqlite)", default="mongodb"
-    ).strip().lower()
+    _section("2 · Database", "Where SPAF stores scans & findings. SQLite needs no server.")
+    backend = typer.prompt("Database backend [mongodb/sqlite]", default="sqlite").strip().lower()
+
     if backend in ("sqlite", "sqlite3", "local", "file"):
         config["SPAF_DB_BACKEND"] = "sqlite"
-        config["SPAF_SQLITE_PATH"] = typer.prompt(
-            "SQLite database file path", default="spaf.db"
-        )
+        config["SPAF_SQLITE_PATH"] = typer.prompt("  SQLite file path", default="spaf.db")
+        if typer.confirm("  Initialize the SQLite database now?", default=True):
+            _provision_sqlite(config["SPAF_SQLITE_PATH"])
     else:
         config["SPAF_DB_BACKEND"] = "mongo"
-        config["SPAF_MONGO_URI"] = typer.prompt(
-            "Enter MongoDB URI", default="mongodb://localhost:27017"
-        )
-        config["SPAF_MONGO_DB"] = typer.prompt("MongoDB database name", default="spaf")
+        config["SPAF_MONGO_URI"] = typer.prompt("  MongoDB URI", default="mongodb://localhost:27017")
+        config["SPAF_MONGO_DB"] = typer.prompt("  MongoDB database name", default="spaf")
+        if typer.confirm("  Auto-provision a local MongoDB now (via Docker)?", default=False):
+            ok = _provision_mongodb(config["SPAF_MONGO_URI"])
+            if not ok and typer.confirm(
+                "  MongoDB isn't ready. Switch to the zero-setup SQLite backend instead?",
+                default=True,
+            ):
+                config = {k: v for k, v in config.items() if not k.startswith("SPAF_MONGO")}
+                config["SPAF_DB_BACKEND"] = "sqlite"
+                config["SPAF_SQLITE_PATH"] = "spaf.db"
+                _provision_sqlite("spaf.db")
 
     # ── Stealth ───────────────────────────────────────────────────────
-    config["USE_TOR"] = typer.confirm("Enable TOR routing by default?", default=False)
+    _section("3 · Stealth & OpsSec")
+    config["USE_TOR"] = typer.confirm("Route traffic through TOR by default?", default=False)
 
+    # ── Write .env ────────────────────────────────────────────────────
     env_content = "\n".join([f"{k}={v}" for k, v in config.items()])
-
     with open(".env", "w") as f:
         f.write("# SPAF Configuration\n")
         f.write(env_content)
         f.write("\nRANDOM_USER_AGENT=true\nSPAF_LOG_LEVEL=INFO\n")
 
-    console.print("[bold green]Configuration saved to .env[/bold green]")
+    # ── Summary ───────────────────────────────────────────────────────
+    summary = _Table(title="Configuration Summary", show_header=False, title_style="bold green")
+    summary.add_column("Setting", style="cyan")
+    summary.add_column("Value", style="white")
+    summary.add_row("AI provider", config.get("AI_PROVIDER", "—"))
     if config["SPAF_DB_BACKEND"] == "sqlite":
-        console.print(
-            "[dim]Using the local SQLite backend — no MongoDB required.[/dim]"
-        )
+        summary.add_row("Database", "SQLite ([green]no server needed[/green])")
+        summary.add_row("DB path", config.get("SPAF_SQLITE_PATH", "spaf.db"))
+    else:
+        summary.add_row("Database", "MongoDB")
+        summary.add_row("Mongo URI", config.get("SPAF_MONGO_URI", "—"))
+    summary.add_row("TOR", "on" if config.get("USE_TOR") else "off")
+    summary.add_row("Saved to", os.path.abspath(".env"))
+
+    console.print()
+    console.print(Panel(summary, border_style="green"))
+    console.print(
+        "[bold green]✓ Setup complete.[/bold green] "
+        "[dim]Next: [/dim][cyan]spaf test-ai[/cyan][dim]  then  [/dim][cyan]spaf tools --install[/cyan]"
+    )
 
 # NOTE: `test-ai` is defined once above via @app.command(name="test-ai") — the
 # detailed health-check with a status table. A second, simpler definition used

@@ -1,23 +1,22 @@
+<!-- HERO: animated banner + typing line. These are hosted animated SVGs that
+     GitHub renders through its image proxy (they animate in the browser). -->
 <div align="center">
 
-<pre>
-███████╗██████╗  █████╗ ███████╗
-██╔════╝██╔══██╗██╔══██╗██╔════╝
-███████╗██████╔╝███████║█████╗
-╚════██║██╔═══╝ ██╔══██║██╔══╝
-███████║██║     ██║  ██║██║
-╚══════╝╚═╝     ╚═╝  ╚═╝╚═╝
-</pre>
+<img alt="SPAF" width="100%"
+     src="https://capsule-render.vercel.app/api?type=rounded&height=220&color=0:04150a,100:0d1117&text=SPAF&fontSize=110&fontColor=39FF41&fontAlignY=42&animation=fadeIn&desc=S%20M%20A%20R%20T%20%20%20P%20E%20N%20T%20E%20S%20T%20I%20N%20G%20%20%20A%20U%20T%20O%20M%20A%20T%20I%20O%20N&descSize=15&descColor=5CE47A&descAlignY=66" />
 
-<samp><b>◇&nbsp; red-team automation&nbsp; ·&nbsp; AI-driven&nbsp; ·&nbsp; scope-safe</b></samp>
+<a href="https://github.com/geevarghesekthomas84-sys/spaf">
+  <img alt="spaf agent · AI plans → runs → reports"
+       src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&weight=600&size=22&pause=1100&color=39FF41&center=true&vCenter=true&width=820&height=46&lines=%24+spaf+agent+target.com;AI+plans+%E2%86%92+runs+%E2%86%92+reports;subfinder+%C2%B7+httpx+%C2%B7+nuclei+%C2%B7+katana+%C2%B7+dnsx;red-team+automation+%C2%B7+AI-driven+%C2%B7+scope-safe" />
+</a>
 
-<br><br>
+<br>
 
-[![version](https://img.shields.io/badge/version-1.4.0-E0A82E?style=flat-square&labelColor=1b1b1b)](CHANGELOG.md)
-[![CI](https://img.shields.io/github/actions/workflow/status/geevarghesekthomas84-sys/spaf/ci.yml?branch=master&style=flat-square&label=ci&labelColor=1b1b1b&color=9AA0A6)](https://github.com/geevarghesekthomas84-sys/spaf/actions/workflows/ci.yml)
-[![Python](https://img.shields.io/badge/python-3.11+-9AA0A6?style=flat-square&labelColor=1b1b1b)](https://python.org)
-[![License](https://img.shields.io/badge/license-MIT-9AA0A6?style=flat-square&labelColor=1b1b1b)](LICENSE)
-[![Stars](https://img.shields.io/github/stars/geevarghesekthomas84-sys/spaf?style=flat-square&labelColor=1b1b1b&color=E0A82E)](https://github.com/geevarghesekthomas84-sys/spaf/stargazers)
+[![version](https://img.shields.io/badge/version-1.4.0-39FF41?style=flat-square&labelColor=04150a)](CHANGELOG.md)
+[![CI](https://img.shields.io/github/actions/workflow/status/geevarghesekthomas84-sys/spaf/ci.yml?branch=master&style=flat-square&label=ci&labelColor=04150a&color=39FF41)](https://github.com/geevarghesekthomas84-sys/spaf/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/python-3.11+-2b3a2f?style=flat-square&labelColor=04150a)](https://python.org)
+[![License](https://img.shields.io/badge/license-MIT-2b3a2f?style=flat-square&labelColor=04150a)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/geevarghesekthomas84-sys/spaf?style=flat-square&labelColor=04150a&color=39FF41)](https://github.com/geevarghesekthomas84-sys/spaf/stargazers)
 
 <sub>AI engines&nbsp; · &nbsp;Google Gemini&nbsp; · &nbsp;Anthropic Claude&nbsp; · &nbsp;Ollama&nbsp; · &nbsp;LM Studio&nbsp; · &nbsp;Shodan</sub>
 

@@ -3,58 +3,53 @@
 <pre>
 ███████╗██████╗  █████╗ ███████╗
 ██╔════╝██╔══██╗██╔══██╗██╔════╝
-███████╗██████╔╝███████║█████╗  
-╚════██║██╔═══╝ ██╔══██║██╔══╝  
-███████║██║     ██║  ██║██║     
-╚══════╝╚═╝     ╚═╝  ╚═╝╚═╝     
+███████╗██████╔╝███████║█████╗
+╚════██║██╔═══╝ ██╔══██║██╔══╝
+███████║██║     ██║  ██║██║
+╚══════╝╚═╝     ╚═╝  ╚═╝╚═╝
 </pre>
 
-**Smart Pentesting Automation Framework**
+<samp><b>◇&nbsp; red-team automation&nbsp; ·&nbsp; AI-driven&nbsp; ·&nbsp; scope-safe</b></samp>
 
-*Scan. Analyze. Exploit. Remediate — Automatically.*
+<br><br>
 
-<br>
+[![version](https://img.shields.io/badge/version-1.4.0-E0A82E?style=flat-square&labelColor=1b1b1b)](CHANGELOG.md)
+[![CI](https://img.shields.io/github/actions/workflow/status/geevarghesekthomas84-sys/spaf/ci.yml?branch=master&style=flat-square&label=ci&labelColor=1b1b1b&color=9AA0A6)](https://github.com/geevarghesekthomas84-sys/spaf/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/python-3.11+-9AA0A6?style=flat-square&labelColor=1b1b1b)](https://python.org)
+[![License](https://img.shields.io/badge/license-MIT-9AA0A6?style=flat-square&labelColor=1b1b1b)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/geevarghesekthomas84-sys/spaf?style=flat-square&labelColor=1b1b1b&color=E0A82E)](https://github.com/geevarghesekthomas84-sys/spaf/stargazers)
 
-[![CI](https://img.shields.io/github/actions/workflow/status/geevarghesekthomas84-sys/spaf/ci.yml?branch=main&style=flat-square&label=CI&logo=githubactions&logoColor=white)](https://github.com/geevarghesekthomas84-sys/spaf/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
-[![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
-[![Async](https://img.shields.io/badge/Engine-Asyncio-00C7B7?style=flat-square&logo=python&logoColor=white)](https://docs.python.org/3/library/asyncio.html)
-[![MongoDB](https://img.shields.io/badge/Database-MongoDB-47A248?style=flat-square&logo=mongodb&logoColor=white)](https://mongodb.com)
-[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat-square&logo=docker&logoColor=white)](Dockerfile)
-[![Stars](https://img.shields.io/github/stars/geevarghesekthomas84-sys/spaf?style=flat-square&logo=github&color=gold)](https://github.com/geevarghesekthomas84-sys/spaf/stargazers)
-
-<br>
-
-**— AI Providers —**
-
-[![Gemini](https://img.shields.io/badge/Google%20Gemini-2.0%20Flash-8E75B2?style=flat-square&logo=googlegemini&logoColor=white)](https://ai.google.dev)
-[![Claude](https://img.shields.io/badge/Anthropic%20Claude-3.5%20Sonnet-D97757?style=flat-square&logo=anthropic&logoColor=white)](https://anthropic.com)
-[![Ollama](https://img.shields.io/badge/Ollama-Local%20%7C%20Streaming-black?style=flat-square&logo=ollama&logoColor=white)](https://ollama.ai)
-[![LM Studio](https://img.shields.io/badge/LM%20Studio-Local%20%7C%20Streaming-FFD21E?style=flat-square&logo=huggingface&logoColor=black)](https://lmstudio.ai)
-[![Shodan](https://img.shields.io/badge/Shodan-Passive%20Intel-FF0000?style=flat-square&logo=shodan&logoColor=white)](https://shodan.io)
+<sub>AI engines&nbsp; · &nbsp;Google Gemini&nbsp; · &nbsp;Anthropic Claude&nbsp; · &nbsp;Ollama&nbsp; · &nbsp;LM Studio&nbsp; · &nbsp;Shodan</sub>
 
 </div>
 
 ---
 
-## 📌 What is SPAF?
+> **Point SPAF at a target and it runs the engagement.** The AI plans the recon,
+> SPAF runs the tools on your machine, and you get the findings plus a written
+> assessment — built for Kali, bug bounty, and red-team work.
 
-**SPAF** is a professional, asynchronous offensive security framework that acts as an **AI-powered Red Team brain**. It goes beyond traditional scanners by automatically transforming vulnerability data into weaponized attack intelligence.
+```bash
+pip install "spaf[ai]"        # SPAF + the AI providers
+spaf setup                    # pick your AI + database (SQLite = zero setup)
+spaf agent target.com         # the AI plans → runs → reports, end to end
+```
 
-- 🎯 Run **multi-vector scans** against any target
-- 🧠 **AI threat analysis** runs automatically after every scan (Google, Claude, Ollama, LM Studio)
-- 🚀 **Auto-generate Proof-of-Concept exploit scripts** in Python
-- 🛠️ Receive **production-ready remediation code** in Ansible, Terraform, or Bash
-- 🕵️ Operate with **full anonymity** via TOR, proxy rotation, and fingerprint randomization
-- ⏱️ **24/7 shadow monitoring** with intelligent alerting
-- 📡 **Passive Shodan intelligence** — open ports & org info without touching the target
-- 📊 **Export findings** to CSV/JSON for client deliverables
-- 🔍 **Diff two scans** — instantly see what changed (new/fixed/unchanged)
-- 🐳 **Docker-ready** — one command to spin up the full stack
+<sub>⚠️ Authorized testing only — see the <a href="#-legal-disclaimer">Legal Disclaimer</a>.</sub>
+
+### What you get
+
+- **`spaf agent`** — an autonomous agent: the AI chooses which modules to run, chains them, and writes the assessment.
+- **Recon toolkit** — one pipeline wrapping `subfinder`, `httpx`, `nuclei`, `katana`, `dnsx`, `ffuf` and more.
+- **AI threat analysis** after every scan — Gemini, Claude, Ollama, or LM Studio — plus PoC and remediation code on demand.
+- **Full attack surface** — recon, network + CVE mapping, web audit, crawler, passive Shodan intel.
+- **Scope-safe & stealthy** — engagement-scope enforcement, TOR, proxy rotation, UA randomization.
+- **Zero-setup storage** — MongoDB, or a local SQLite file with nothing to install.
+- **Share it** — dark-mode HTML/JSON reports, CSV export, and scan diffing.
 
 ---
 
-## ✨ Core Feature Set
+## ◇ Core feature set
 
 <table width="100%">
 <tr>
@@ -165,7 +160,7 @@ subfinder / assetfinder  →  dnsx  →  httpx  →  katana / hakrawler
 
 ---
 
-## 🎬 Demo
+## ◇ Demo
 
 A 60-second tour — safe to run offline against `example.com`:
 
@@ -181,7 +176,7 @@ spaf report example.com --format html --with-ai   # shareable HTML report + AI a
 
 ---
 
-## 🚀 Installation
+## ◇ Installation
 
 ### From PyPI (recommended)
 
@@ -219,7 +214,7 @@ spaf setup                       # interactive configuration wizard
 
 ---
 
-## 🐳 Docker Deployment
+## ◇ Docker
 
 The fastest way to get running — no manual setup of MongoDB or Python environment needed.
 
@@ -243,7 +238,7 @@ docker-compose run spaf export target.com --format csv
 
 ---
 
-## ⚙️ Configuration
+## ◇ Configuration
 
 Copy `.env.example` to `.env` and configure your providers:
 
@@ -286,7 +281,7 @@ SPAF_SQLITE_PATH=spaf.db                   # used when backend = sqlite
 
 ---
 
-## 💻 Usage
+## ◇ Usage
 
 > 📖 **Full command reference with all flags and examples → [COMMANDS.md](COMMANDS.md)**
 
@@ -349,7 +344,7 @@ spaf update                                          # Update SPAF to latest
 
 ---
 
-## 🤖 AI Provider Setup
+## ◇ AI providers
 
 ### Quick Comparison
 
@@ -403,7 +398,7 @@ spaf lmstudio "Analyze these HTTP headers for security risks"
 
 ---
 
-## 📡 Shodan Integration
+## ◇ Shodan intel
 
 Enrich every `spaf recon` scan with **passive Shodan intelligence** — open ports, org, ISP, and country — without sending any packets to the target.
 
@@ -421,7 +416,7 @@ spaf recon target.com
 
 ---
 
-## 🔍 Scan Diff & Export
+## ◇ Diff & export
 
 ```bash
 # View scan history to get IDs
@@ -437,7 +432,7 @@ spaf export target.com --format json --output /tmp/findings.json
 
 ---
 
-## 🗂️ Engagement Scope
+## ◇ Engagement scope
 
 ```bash
 # Initialise scope (creates scope.json in current directory)
@@ -456,7 +451,7 @@ spaf scope show --file engagement_scope.json
 
 ---
 
-## 📁 Project Structure
+## ◇ Project structure
 
 ```
 spaf/
@@ -481,7 +476,7 @@ spaf/
 
 ---
 
-## 🤝 Contributing & Releasing
+## ◇ Contributing & releasing
 
 Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) and the
 [Code of Conduct](CODE_OF_CONDUCT.md). In short:
@@ -509,7 +504,7 @@ git push origin v1.0.1        # → builds, checks, and publishes to PyPI
 
 ---
 
-## 🔒 Stealth & OpsSec
+## ◇ Stealth & OpsSec
 
 | Variable | Description |
 |---|---|
@@ -521,7 +516,7 @@ git push origin v1.0.1        # → builds, checks, and publishes to PyPI
 
 ---
 
-## ⚠️ Legal Disclaimer
+## ◇ Legal disclaimer
 
 > This tool is intended **strictly** for authorized security testing, research, and educational purposes only. The developer assumes **no liability** for any misuse or damage caused. Always obtain **explicit written permission** from the target organization before conducting any security tests.
 

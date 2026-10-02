@@ -3,6 +3,25 @@
 All notable changes to SPAF are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.0.0a1] — platform preview
+
+### Added
+- **Service layer (`spaf/service/`)** — a typed, UI-free facade (`SpafService`)
+  with Pydantic models, an async `EventBus`, and an append-only **audit log** for
+  every active action. Runs modules **headlessly** (no stdout) so it is safe
+  under the MCP stdio transport; scope is enforced centrally.
+- **MCP server (`spaf mcp`, `spaf[mcp]` extra)** — exposes SPAF as MCP tools
+  (`recon`, `toolkit`, `scan`, `webscan`, `crawl`, `agent_run`, `scope_show`,
+  `scope_add`, `tools_status`) plus `spaf://scope` / `spaf://tools` resources and
+  an `assess_target` prompt, over stdio for Claude Desktop and other MCP hosts.
+  Safety: scope enforced inside every tool with no model-exposed bypass;
+  `agent_run` is plan-only unless `dry_run=false`; no raw-command tool; output is
+  shaped/capped for context. `pydantic>=2` added to core.
+
+### Notes
+- Pre-release (`pip install --pre "spaf[mcp]"`); the 1.4.x CLI is unchanged.
+- First slice of the v2 platform roadmap (`docs/ROADMAP_V2.md`).
+
 ## [1.4.0]
 
 ### Changed

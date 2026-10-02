@@ -1118,6 +1118,23 @@ def agent(
 
 
 @app.command()
+def mcp(
+    scope_file: str = typer.Option("scope.json", "--scope-file", help="Engagement scope file the server enforces"),
+):
+    """Run SPAF as an MCP server (stdio) so Claude Desktop / MCP hosts can drive it."""
+    try:
+        from spaf.mcp.server import run as run_mcp
+    except ModuleNotFoundError:
+        console.print(
+            "[bold red]MCP support is not installed.[/bold red]\n"
+            "[dim]Install it with:[/dim] [cyan]pip install \"spaf[mcp]\"[/cyan]"
+        )
+        raise typer.Exit(1)
+    # Do NOT print anything else to stdout here — stdio carries the MCP protocol.
+    run_mcp(scope_file=scope_file)
+
+
+@app.command()
 def report(
     target: Optional[str] = typer.Argument(None, help="Target to generate report for"),
     format: str = typer.Option("both", "--format", help="Report format: html|json|both"),

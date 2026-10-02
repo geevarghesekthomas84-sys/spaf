@@ -382,6 +382,43 @@ spaf update                                          # Update SPAF to latest
 
 ---
 
+## ◇ MCP server <sup>new · 2.0 preview</sup>
+
+Run SPAF as an **MCP server** so Claude Desktop (or any MCP host) can drive it
+with natural language — recon, the toolkit, scans, and the autonomous agent, all
+as native tools, locally.
+
+```bash
+pip install --pre "spaf[mcp]"     # installs the MCP support
+spaf scope add target.com         # authorize a target first
+spaf mcp                          # serve over stdio
+```
+
+Add it to **Claude Desktop** (`claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "spaf": { "command": "spaf", "args": ["mcp"] }
+  }
+}
+```
+
+Then ask Claude things like *"recon target.com and summarize the risks."*
+
+**Safety model** (a model is calling these):
+- Scope is enforced **inside every tool** — out-of-scope targets are refused, and
+  there is **no bypass flag** exposed to the model.
+- `agent_run` is **plan-only by default**; active execution needs an explicit
+  `dry_run=false` and an in-scope target.
+- **No raw-command tool** — the model only selects SPAF's fixed modules.
+- Every active call is written to an **audit log** (`logs/audit.jsonl`).
+
+> See [`docs/ROADMAP_V2.md`](docs/ROADMAP_V2.md) for the full platform plan
+> (HTTP API, model router, secure gateway, dashboard).
+
+---
+
 ## ◇ AI providers
 
 ### Quick Comparison

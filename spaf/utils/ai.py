@@ -1,7 +1,7 @@
 import os
 import json
 import asyncio
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 # ── Google GenAI (new SDK) ────────────────────────────────────────────────────
 try:
@@ -406,6 +406,28 @@ class AIOrchestrator:
     async def chat(self, prompt: str) -> str:
         """General-purpose AI interaction (`spaf chat`, `spaf shell`, watch alerts)."""
         return await self._call(_SYSTEM_BASE, prompt)
+
+    # Attribute holding the active model for each provider (for overrides).
+    _MODEL_ATTR = {
+        "google": "google_model", "claude": "anthropic_model",
+        "ollama": "ollama_model", "lmstudio": "lmstudio_model",
+    }
+
+    async def complete(self, system: str, prompt: str, *, model: Optional[str] = None,
+                       max_tokens: int = 4096) -> str:
+        """
+        Provider call with an optional per-call model override (used by the
+        orchestration router). Restores the configured model afterwards.
+        """
+        attr = self._MODEL_ATTR.get(self.provider)
+        if model and attr:
+            old = getattr(self, attr, None)
+            setattr(self, attr, model)
+            try:
+                return await self._call(system, prompt, max_tokens)
+            finally:
+                setattr(self, attr, old)
+        return await self._call(system, prompt, max_tokens)
 
     async def stream_chat(self, prompt: str, console=None) -> str:
         """

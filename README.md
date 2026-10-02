@@ -458,6 +458,11 @@ curl -s -XPOST localhost:8000/scans -H "X-API-Key: $KEY" \
 
 ## ◇ AI providers
 
+> **Model routing, caching & budgets** (1.7+): the agent routes each task to a
+> model you choose (`SPAF_MODEL_PLAN`, `SPAF_MODEL_ANALYZE`, …, comma-separated
+> for fallbacks), caches responses (`SPAF_CACHE=off` to disable), and bounds each
+> run (`SPAF_BUDGET_CALLS` / `SPAF_BUDGET_SECONDS`). Unset = your provider's default.
+
 ### Quick Comparison
 
 | Provider | Type | Model | Privacy | Streaming | Best For |

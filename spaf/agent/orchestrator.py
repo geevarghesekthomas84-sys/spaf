@@ -45,6 +45,20 @@ ACTIVE_ACTIONS = {"toolkit", "scan", "webscan", "crawl"}
 # Fallback plan when AI planning is unavailable or fails.
 DEFAULT_PLAYBOOK = ["recon", "toolkit", "webscan", "scan"]
 
+_AGENT_SYSTEM = (
+    "You are the autonomous brain of SPAF, an authorized offensive-security "
+    "framework. Be precise, technical, and safety-aware. Authorized testing only."
+)
+
+_ASSESS_PROMPT = """You are writing the final assessment for a SPAF engagement.
+
+### Findings (JSON):
+{findings}
+
+Produce a concise Red Team assessment: the top risks with impact, the most
+likely exploitation path, and prioritized, concrete remediation. Use markdown.
+"""
+
 _PLAN_PROMPT = """You are the planning brain of SPAF, an authorized penetration-testing framework.
 Plan an assessment of the target below by choosing an ordered sequence of steps
 from this FIXED set of modules (you may not invent others):
@@ -80,10 +94,11 @@ class PentestAgent:
         if self.options.get("no_ai"):
             return self._default_plan("AI planning disabled (--no-ai)")
 
-        from spaf.utils.ai import ai_orchestrator
+        from spaf.orchestration import default_orchestrator
         prompt = _PLAN_PROMPT.format(target=self.target, goal=self.goal)
         try:
-            raw = await ai_orchestrator.chat(prompt)
+            raw = await default_orchestrator().complete(
+                "plan", _AGENT_SYSTEM, prompt, budget=self.options.get("budget"))
             steps = self._parse_plan(raw)
             if steps:
                 return steps
@@ -186,9 +201,14 @@ class PentestAgent:
     async def summarize(self) -> Optional[str]:
         if self.options.get("no_ai") or not self.findings:
             return None
-        from spaf.utils.ai import ai_orchestrator
+        from spaf.orchestration import default_orchestrator
+        prompt = _ASSESS_PROMPT.format(
+            findings=json.dumps([f for f in self.findings], indent=2, default=str)[:60000]
+        )
         try:
-            return await ai_orchestrator.analyze_findings(self.findings)
+            out = await default_orchestrator().complete(
+                "analyze", _AGENT_SYSTEM, prompt, budget=self.options.get("budget"))
+            return None if out.lstrip().startswith(("⚠️", "Error [")) else out
         except Exception as exc:
             logger.warning(f"Agent: final AI assessment failed ({exc}).")
             return None

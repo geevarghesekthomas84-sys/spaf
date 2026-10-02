@@ -3,6 +3,20 @@
 All notable changes to SPAF are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.7.0]
+
+### Added
+- **AI orchestration layer (`spaf/orchestration/`)** — the agent's planning and
+  assessment now run through a shared orchestrator:
+  - **Model router** — route tasks to specific models with fallbacks, config-driven
+    (`SPAF_MODEL_PLAN` / `_ANALYZE` / `_CODEGEN` / `_DEFAULT`); unset = provider default.
+  - **Response cache** — prompt→response cache (`logs/ai_cache.db`, `SPAF_CACHE=off`
+    to disable) cuts cost/latency and makes runs replayable.
+  - **Run budget** — bound calls/characters/time per run
+    (`SPAF_BUDGET_CALLS` / `_CHARS` / `_SECONDS`) so an autonomous loop can't run away.
+  - **Fallback chain** — on a provider/model error the next model in the chain is tried.
+  - New `ai_orchestrator.complete(..., model=…)` for per-call model override.
+
 ## [1.6.0]
 
 ### Added

@@ -419,6 +419,43 @@ Then ask Claude things like *"recon target.com and summarize the risks."*
 
 ---
 
+## ◇ HTTP API <sup>new in 1.6</sup>
+
+Run SPAF as a service — everything the CLI does, over REST, with **live scan
+events over WebSocket**. Secure by default: every endpoint except `/health` and
+`/version` needs an API key, and active scans are scope-gated.
+
+```bash
+pip install "spaf[api]"
+export SPAF_API_KEYS="your-secret-key"   # or let it print a generated one
+spaf serve                               # http://127.0.0.1:8000  (docs at /docs)
+```
+
+```bash
+# start a scan (returns a job id), then stream it
+curl -s -XPOST localhost:8000/scans -H "X-API-Key: $KEY" \
+     -H 'content-type: application/json' \
+     -d '{"module":"toolkit","target":"example.com"}'
+# → {"job_id":"…","status":"running"}
+#   GET /jobs/{id}         → status + typed findings
+#   WS  /ws/jobs/{id}      → live step/finding events
+```
+
+| Endpoint | What it does |
+|---|---|
+| `GET /health`, `GET /version` | open health/version |
+| `GET /scope`, `POST /scope` | view / add engagement scope |
+| `GET /tools` | external-tool install status |
+| `POST /scans`, `POST /agent` | start a scan / agent job (202 + job id) |
+| `GET /jobs/{id}` | job status + typed result |
+| `WS /ws/jobs/{id}` | live progress & findings |
+| `GET /scans/recent`, `GET /findings/{id}` | history / findings |
+
+> Bind `--host 0.0.0.0` only behind the reverse-proxy gateway (TLS/auth) — see
+> the roadmap. Interactive API docs are at `/docs`.
+
+---
+
 ## ◇ AI providers
 
 ### Quick Comparison

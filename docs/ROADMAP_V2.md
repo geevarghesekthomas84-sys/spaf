@@ -13,6 +13,10 @@
 This is a plan, not a commitment to build it all at once. Each phase is
 independently shippable and leaves `main` green.
 
+**Status:** ✅ Phase 0 (service layer) · ✅ Phase 1 (HTTP API) ·
+✅ Phase 2 minimal (MCP server, stdio) — shipped. Next: Phase 3 (AI
+orchestration) or Phase 5 (secure gateway).
+
 ---
 
 ## 1. Where we are (v1.4.0)

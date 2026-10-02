@@ -1118,6 +1118,28 @@ def agent(
 
 
 @app.command()
+def serve(
+    host: str = typer.Option("127.0.0.1", "--host", help="Bind address (default localhost; use 0.0.0.0 behind a gateway)"),
+    port: int = typer.Option(8000, "--port", help="Port to listen on"),
+    scope_file: str = typer.Option("scope.json", "--scope-file", help="Engagement scope file the API enforces"),
+):
+    """Run the SPAF HTTP API (REST + WebSocket live events)."""
+    try:
+        import uvicorn
+        from spaf.api import create_app
+    except ModuleNotFoundError:
+        console.print(
+            "[bold red]API support is not installed.[/bold red]\n"
+            "[dim]Install it with:[/dim] [cyan]pip install \"spaf[api]\"[/cyan]"
+        )
+        raise typer.Exit(1)
+    print_banner(compact=True)
+    console.print(f"[dim]API on[/dim] [cyan]http://{host}:{port}[/cyan]  "
+                  f"[dim]· docs at[/dim] [cyan]/docs[/cyan]  [dim]· set SPAF_API_KEYS, or watch stderr for a generated key.[/dim]")
+    uvicorn.run(create_app(scope_file), host=host, port=port, log_level="info")
+
+
+@app.command()
 def mcp(
     scope_file: str = typer.Option("scope.json", "--scope-file", help="Engagement scope file the server enforces"),
 ):

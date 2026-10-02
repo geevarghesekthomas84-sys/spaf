@@ -34,6 +34,9 @@ class EventBus:
     async def subscribe(self) -> AsyncIterator[Event]:
         q: asyncio.Queue = asyncio.Queue()
         self._queues.append(q)
+        if self._closed:
+            # Subscribed after close() — don't hang; terminate immediately.
+            q.put_nowait(None)
         try:
             # Drain until the None sentinel so queued events aren't dropped when
             # the bus is closed right after a burst of publishes.

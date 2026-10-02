@@ -3,6 +3,22 @@
 All notable changes to SPAF are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.6.0]
+
+### Added
+- **HTTP API (`spaf serve`, `spaf[api]` extra)** — FastAPI REST + WebSocket over
+  the service layer. Async job model: `POST /scans` and `POST /agent` return a
+  job id, progress streams over `WS /ws/jobs/{id}`, and `GET /jobs/{id}` returns
+  the typed result. Plus `/scope`, `/tools`, `/scans/recent`, `/findings/{id}`,
+  and OpenAPI docs at `/docs`. Secure by default: API-key auth on every endpoint
+  except `/health` and `/version` (a key is generated and logged if none is set),
+  and active scans are scope-gated (out-of-scope → 403). Binds `127.0.0.1` by
+  default.
+
+### Fixed
+- `EventBus`: subscribing after `close()` no longer hangs (WebSocket connecting
+  to a just-finished job).
+
 ## [1.5.0]
 
 ### Added

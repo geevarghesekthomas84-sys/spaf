@@ -12,7 +12,7 @@
 
 <br>
 
-[![version](https://img.shields.io/badge/version-1.4.0-39FF41?style=flat-square&labelColor=04150a)](CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-1.5.0-39FF41?style=flat-square&labelColor=04150a)](CHANGELOG.md)
 [![CI](https://img.shields.io/github/actions/workflow/status/geevarghesekthomas84-sys/spaf/ci.yml?branch=master&style=flat-square&label=ci&labelColor=04150a&color=39FF41)](https://github.com/geevarghesekthomas84-sys/spaf/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.11+-2b3a2f?style=flat-square&labelColor=04150a)](https://python.org)
 [![License](https://img.shields.io/badge/license-MIT-2b3a2f?style=flat-square&labelColor=04150a)](LICENSE)
@@ -382,14 +382,14 @@ spaf update                                          # Update SPAF to latest
 
 ---
 
-## ◇ MCP server <sup>new · 2.0 preview</sup>
+## ◇ MCP server <sup>new in 1.5</sup>
 
 Run SPAF as an **MCP server** so Claude Desktop (or any MCP host) can drive it
 with natural language — recon, the toolkit, scans, and the autonomous agent, all
 as native tools, locally.
 
 ```bash
-pip install --pre "spaf[mcp]"     # installs the MCP support
+pip install "spaf[mcp]"           # installs the MCP support
 spaf scope add target.com         # authorize a target first
 spaf mcp                          # serve over stdio
 ```

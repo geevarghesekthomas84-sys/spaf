@@ -3,7 +3,7 @@
 All notable changes to SPAF are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [2.0.0a1] — platform preview
+## [1.5.0]
 
 ### Added
 - **Service layer (`spaf/service/`)** — a typed, UI-free facade (`SpafService`)
@@ -19,8 +19,12 @@ All notable changes to SPAF are documented here. The format is based on
   shaped/capped for context. `pydantic>=2` added to core.
 
 ### Notes
-- Pre-release (`pip install --pre "spaf[mcp]"`); the 1.4.x CLI is unchanged.
+- The MCP server is optional — install with `pip install "spaf[mcp]"`.
 - First slice of the v2 platform roadmap (`docs/ROADMAP_V2.md`).
+
+> **1.5.0 is the first release since 1.1.0**, so it also ships everything from
+> 1.2–1.4: the recon toolkit, engagement scope, the autonomous agent, the SQLite
+> backend + redesigned setup, `--version`, and the premium CLI redesign.
 
 ## [1.4.0]
 

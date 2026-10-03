@@ -67,7 +67,7 @@ include = ["spaf*"]
 Homepage = "https://github.com/geevarghesekthomas84-sys/spaf"
 Repository = "https://github.com/geevarghesekthomas84-sys/spaf"
 Issues = "https://github.com/geevarghesekthomas84-sys/spaf/issues"
-Changelog = "https://github.com/geevarghesekthomas84-sys/spaf/blob/main/CHANGELOG.md"
+Changelog = "https://github.com/geevarghesekthomas84-sys/spaf/blob/master/CHANGELOG.md"
 
 [project.scripts]
 spaf = "spaf.cli.main:entry_point"

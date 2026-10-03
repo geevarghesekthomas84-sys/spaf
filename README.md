@@ -2,7 +2,7 @@
      matches the CLI + dashboard design system) + a hosted typing ticker. -->
 <div align="center">
 
-<img alt="SPAF — Smart Pentesting Automation Framework" width="100%" src="assets/hero.svg" />
+<img alt="SPAF — Smart Pentesting Automation Framework" width="100%" src="https://raw.githubusercontent.com/geevarghesekthomas84-sys/spaf/master/assets/hero.svg" />
 
 <a href="https://github.com/geevarghesekthomas84-sys/spaf">
   <img alt="AI plans → runs → reports"
@@ -13,7 +13,7 @@
 <sub>Built for Kali, bug bounty, and red-team work · <b>authorized testing only</b></sub></p>
 
 <p>
-  <a href="CHANGELOG.md"><img alt="version" src="https://img.shields.io/badge/version-1.11.0-E0A82E?style=flat-square&labelColor=0a0e12"></a>
+  <a href="https://pypi.org/project/spaf/"><img alt="PyPI" src="https://img.shields.io/pypi/v/spaf?style=flat-square&label=pypi&labelColor=0a0e12&color=E0A82E"></a>
   <a href="https://github.com/geevarghesekthomas84-sys/spaf/actions/workflows/ci.yml"><img alt="ci" src="https://img.shields.io/github/actions/workflow/status/geevarghesekthomas84-sys/spaf/ci.yml?branch=master&style=flat-square&label=ci&labelColor=0a0e12&color=E0A82E"></a>
   <a href="https://python.org"><img alt="python" src="https://img.shields.io/badge/python-3.11+-E0A82E?style=flat-square&labelColor=0a0e12&logo=python&logoColor=E0A82E"></a>
   <a href="LICENSE"><img alt="license" src="https://img.shields.io/badge/license-MIT-9AA6B2?style=flat-square&labelColor=0a0e12"></a>

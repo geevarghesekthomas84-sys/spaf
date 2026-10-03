@@ -42,9 +42,19 @@ class ScopeError(PermissionError):
 
 
 class SpafService:
-    def __init__(self, scope_file: str = "scope.json"):
+    def __init__(self, scope_file: str = "scope.json", *,
+                 audit_path: Optional[str] = None, actor: str = "local",
+                 engagement: Optional[str] = None):
         self.scope_file = scope_file
+        self.audit_path = audit_path
+        self.actor = actor
+        self.engagement = engagement
         self._db_ready: Optional[bool] = None
+
+    def _audit(self, action: str, target: str, **kw: Any) -> None:
+        kw.setdefault("actor", self.actor)
+        audit.record(action, target, engagement=self.engagement,
+                     path=self.audit_path, **kw)
 
     # ------------------------------------------------------------------
     # Scope
@@ -65,13 +75,13 @@ class SpafService:
         if value not in data["in_scope"]:
             data["in_scope"].append(value)
             scopelib.save_scope(self.scope_file, data)
-        audit.record("scope_add", value, scope_ok=True)
+        self._audit("scope_add", value, scope_ok=True)
         return self.scope_state()
 
     def _check_scope(self, target: str, surface: str) -> None:
         data = scopelib.load_scope(self.scope_file)
         if scopelib.has_scope(data) and not scopelib.is_in_scope(target, data):
-            audit.record("scope_denied", target, scope_ok=False, surface=surface)
+            self._audit("scope_denied", target, scope_ok=False, surface=surface)
             raise ScopeError(
                 f"{target} is outside the engagement scope in {self.scope_file}. "
                 f"Add it with scope_add (authorized targets only)."
@@ -118,7 +128,7 @@ class SpafService:
 
         options = dict(options or {})
         self._check_scope(target, surface)
-        audit.record(f"run_module:{module}", target, scope_ok=True, surface=surface)
+        self._audit(f"run_module:{module}", target, scope_ok=True, surface=surface)
 
         if bus:
             bus.publish(Event("run_started", target=target, module=module))
@@ -185,13 +195,13 @@ class SpafService:
         plan = await self.plan_agent(target, goal)
         result = AgentResult(target=target, goal=goal, dry_run=dry_run, plan=plan)
         if dry_run:
-            audit.record("agent_plan", target, scope_ok=self.is_allowed(target), surface=surface)
+            self._audit("agent_plan", target, scope_ok=self.is_allowed(target), surface=surface)
             return result
 
         # Active execution: target must be in scope; each step runs headless.
         self._check_scope(target, surface)
-        audit.record("agent_run", target, scope_ok=True, surface=surface,
-                     extra={"aggressive": aggressive})
+        self._audit("agent_run", target, scope_ok=True, surface=surface,
+                    extra={"aggressive": aggressive})
         all_findings: List[Finding] = []
         for step in plan:
             if not step.scope_ok:

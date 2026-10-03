@@ -16,8 +16,8 @@ independently shippable and leaves `main` green.
 **Status:** ✅ Phase 0 (service layer) · ✅ Phase 1 (HTTP API) ·
 ✅ Phase 2 minimal (MCP server, stdio) · ✅ Phase 3 (AI orchestration) ·
 ✅ Phase 5 (secure gateway + hardened deploy) · ✅ Phase 4 (MCP client + plugin
-SDK) · ✅ Phase 6 (observability + web dashboard) — shipped. Next: Phase 7
-(multi-engagement + RBAC).
+SDK) · ✅ Phase 6 (observability + web dashboard) ·
+✅ Phase 7 (multi-engagement + RBAC) — **all phases shipped.**
 
 ---
 
@@ -225,14 +225,24 @@ ordered by leverage; 2 (MCP) and 3 (orchestration) are the headline.
 - **Acceptance:** run an agent; watch it live in the dashboard; audit log records
   every active step; `/metrics` scrapes. ✅
 
-### Phase 7 — Multi-engagement & RBAC  *(stretch)*
+### Phase 7 — Multi-engagement & RBAC  *(shipped — v1.11.0)*
 - **Goal:** teams and multiple concurrent engagements.
-- **Build:** engagement workspaces (isolated scope + storage + secrets), roles
-  (operator/lead/viewer), signed engagement authorizations, result retention
-  policies.
-- **Deliverable:** `spaf/workspaces/`, RBAC middleware.
-- **Acceptance:** two engagements run isolated; a viewer can't launch active
-  scans.
+- **Shipped:**
+  - **Engagement workspaces** (`spaf/workspaces/manager.py`) — each isolates its
+    own scope file, audit trail, and report storage under
+    `SPAF_ENGAGEMENTS_DIR`; work in one cannot leak into another.
+  - **Roles** viewer/operator/lead with ordered checks (`Role`, `Principal`);
+    principals map API keys → role + allowed engagements via `SPAF_PRINCIPALS`
+    (opt-in; existing keys stay all-access leads).
+  - **Signed engagement authorizations** (`authorization.py`) — tamper-evident
+    HMAC over engagement id + scope hash + authorizer + expiry, minted only with
+    `SPAF_AUTH_SIGNING_KEY`; active runs require a valid signature when signing
+    is configured.
+  - **Retention policies** — per-engagement `retention_days` + `purge_expired`.
+  - **RBAC middleware** in the API (principal + `X-Engagement` dependencies,
+    role gates on active/management endpoints); `spaf engagements` CLI.
+- **Acceptance:** two engagements run isolated (scope + audit); a viewer gets
+  403 on active scans. ✅ (`tests/test_workspaces.py`, `tests/test_api_rbac.py`)
 
 ---
 

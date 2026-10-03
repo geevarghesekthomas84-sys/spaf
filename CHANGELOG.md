@@ -3,6 +3,34 @@
 All notable changes to SPAF are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.11.0]
+
+### Added
+- **Multi-engagement workspaces + RBAC (`spaf/workspaces/`)** — teams can run
+  several concurrent engagements, isolated from each other, with role-based
+  access control:
+  - **Engagements** — each is an isolated workspace with its own scope file,
+    audit trail, and report storage under `SPAF_ENGAGEMENTS_DIR`
+    (`engagements/<id>/`). Work in one engagement cannot leak into another.
+    Manage from the CLI (`spaf engagements [--create …]`) or the API
+    (`GET/POST /engagements`).
+  - **Roles** — `viewer` (read-only), `operator` (+ launch scans / active agent
+    runs), `lead` (+ manage scope, create engagements). Principals map API keys
+    to a role and a set of allowed engagements via `SPAF_PRINCIPALS` /
+    `SPAF_PRINCIPALS_FILE`. **Backwards-compatible:** with no principals
+    configured, existing `SPAF_API_KEYS` act as all-access leads, so RBAC is
+    strictly opt-in.
+  - **Signed authorizations** — an engagement can carry a tamper-evident
+    HMAC-signed record of the client's go-ahead (who authorized, scope hash,
+    expiry), minted only with `SPAF_AUTH_SIGNING_KEY`. When a signing key is set,
+    active runs on a persisted engagement require a valid, unexpired signature.
+  - **Retention policies** — per-engagement `retention_days` with a `purge_expired`
+    sweep over stored reports.
+  - **API**: every request carries a principal (role) and an optional
+    `X-Engagement` header selecting the workspace; `GET /whoami` reports identity;
+    viewers get `403` on active endpoints, out-of-engagement access gets `403`,
+    unknown engagements `404`.
+
 ## [1.10.0]
 
 ### Added

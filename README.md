@@ -446,6 +446,8 @@ curl -s -XPOST localhost:8000/scans -H "X-API-Key: $KEY" \
 | `GET /health`, `GET /version` | open health/version |
 | `GET /metrics` | open Prometheus metrics (aggregate only) |
 | `GET /`, `GET /dashboard` | built-in web console (open) |
+| `GET /whoami` | your principal (role + engagements) |
+| `GET /engagements`, `POST /engagements` | list / create engagements (create = lead) |
 | `GET /scope`, `POST /scope` | view / add engagement scope |
 | `GET /tools` | external-tool install status |
 | `GET /audit` | recent active-action audit entries |
@@ -530,6 +532,52 @@ spaf mcp-tools          # list tools exposed by the configured servers
 
 > Plugins and external MCP tools run through the CLI/API/service — they are not
 > auto-added to the autonomous agent's fixed action set (that stays curated).
+
+---
+
+## ◇ Engagements & RBAC <sup>new in 1.11</sup>
+
+Run multiple **isolated engagements** with **role-based access control** — for
+teams and concurrent client work. Each engagement has its own scope, audit
+trail, and report storage; nothing leaks between them.
+
+```bash
+# create an engagement (optionally with a signed client authorization)
+export SPAF_AUTH_SIGNING_KEY="…"      # minting key for authorizations
+spaf engagements --create "Acme Corp" --scope "acme.com,api.acme.com" \
+                 --authorized-by "ciso@acme.com" --retention-days 90
+spaf engagements                       # list them
+```
+
+**Roles** — map API keys to a role and the engagements they may touch:
+
+```bash
+export SPAF_PRINCIPALS='{
+  "LEAD_KEY":  {"name":"lead","role":"lead","engagements":["*"]},
+  "OP_KEY":    {"name":"op","role":"operator","engagements":["acme-corp"]},
+  "VIEW_KEY":  {"name":"client","role":"viewer","engagements":["acme-corp"]}
+}'
+spaf serve
+```
+
+| Role | Can |
+|---|---|
+| **viewer** | read scope, tools, findings, audit |
+| **operator** | + launch scans & active agent runs (in allowed engagements) |
+| **lead** | + manage scope, create engagements, sign authorizations |
+
+Over the API, send `X-API-Key` (→ your role) and `X-Engagement: <id>` to pick the
+workspace. `GET /whoami` shows your identity; `GET/POST /engagements` list/create
+them. A **viewer** gets `403` on active endpoints; access outside your granted
+engagements is `403`; an unknown engagement is `404`.
+
+- **Signed authorizations** — with `SPAF_AUTH_SIGNING_KEY` set, an engagement's
+  authorization is a tamper-evident HMAC over its id, scope hash, authorizer, and
+  expiry. Editing the stored scope or expiry invalidates it, and active runs are
+  refused without a valid, unexpired signature.
+- **Backwards-compatible** — with no `SPAF_PRINCIPALS` set, your existing
+  `SPAF_API_KEYS` act as all-access **leads** and a single default engagement is
+  used, so nothing changes until you opt in.
 
 ---
 
@@ -653,14 +701,20 @@ spaf/
 │   ├── cli/          # Typer CLI — all commands
 │   ├── core/         # Async engine & BaseModule
 │   ├── agent/        # autonomous AI orchestrator (spaf agent)
+│   ├── orchestration/# model router, response cache, run budgets
 │   ├── modules/      # recon, network, webscan, crawler, toolkit
+│   ├── service/      # UI-free facade (scope, audit, events) shared by API/MCP
+│   ├── api/          # FastAPI REST + WebSocket, metrics, dashboard
+│   ├── mcp/          # MCP server (expose tools) + client (consume servers)
+│   ├── plugins/      # third-party scan-module SDK + registry
+│   ├── workspaces/   # multi-engagement workspaces + RBAC + signed auth
 │   ├── utils/        # AI orchestrator, proxy, risk, validator, scope, logger
-│   ├── database/     # MongoDB async driver (Motor) with full indexes
+│   ├── database/     # MongoDB (Motor) / SQLite async backends
 │   └── reports/      # HTML & JSON report generator
+├── deploy/           # hardened Docker image + Caddy TLS gateway + compose
 ├── tests/            # Pytest test suite
-├── scripts/          # demo.sh and helper scripts
-├── docs/             # Demo recipe and extra docs
-├── .github/          # CI + release workflows, issue/PR templates
+├── docs/             # roadmap, demo recipe, extra docs
+├── .github/          # CI + release + security workflows, issue/PR templates
 ├── Dockerfile        # Python 3.12-slim + nmap + Go recon suite
 ├── docker-compose.yml # MongoDB 7 + SPAF with healthcheck
 ├── scope.json        # Engagement scope (auto-created)

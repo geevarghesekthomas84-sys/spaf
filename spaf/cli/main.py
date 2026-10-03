@@ -1209,6 +1209,47 @@ def plugins():
 
 
 @app.command()
+def engagements(
+    create: Optional[str] = typer.Option(None, "--create", help="Create an engagement with this name"),
+    scope: Optional[str] = typer.Option(None, "--scope", help="Comma-separated in-scope entries for --create"),
+    authorized_by: Optional[str] = typer.Option(None, "--authorized-by", help="Sign an authorization from this party"),
+    retention_days: int = typer.Option(0, "--retention-days", help="Days to keep results (0 = forever)"),
+):
+    """List engagement workspaces, or create one with --create (Phase 7)."""
+    from spaf.utils import ui
+    from spaf.workspaces import EngagementManager
+    mgr = EngagementManager()
+
+    if create:
+        in_scope = [s.strip() for s in (scope or "").split(",") if s.strip()]
+        eng = mgr.create(create, created_by="cli", in_scope=in_scope,
+                         retention_days=retention_days,
+                         authorized_by=authorized_by or None)
+        console.print(f"[{ui.OK}]created[/] engagement [bold]{eng.id}[/] "
+                      f"at [dim]{eng.storage_dir}[/dim]")
+        if authorized_by:
+            ok = mgr.authorization_valid(eng)
+            console.print(f"  authorization: {'[green]signed & valid[/]' if ok else '[red]invalid[/]'}")
+        return
+
+    rows = mgr.list()
+    if not rows:
+        console.print(f"[{ui.FAINT}]No engagements yet.[/] "
+                      f"[dim]Create one: spaf engagements --create 'Acme' --scope acme.com[/dim]")
+        return
+    table = ui.table("Engagements")
+    table.add_column("ID", style=ui.AMBER)
+    table.add_column("Name")
+    table.add_column("Authorized")
+    table.add_column("Retention")
+    for e in rows:
+        auth = "[green]yes[/]" if mgr.authorization_valid(e) else f"[{ui.FAINT}]no[/]"
+        ret = f"{e.retention.days}d" if e.retention.days else "∞"
+        table.add_row(e.id, e.name, auth, ret)
+    console.print(table)
+
+
+@app.command()
 def report(
     target: Optional[str] = typer.Argument(None, help="Target to generate report for"),
     format: str = typer.Option("both", "--format", help="Report format: html|json|both"),

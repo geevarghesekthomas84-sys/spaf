@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" fill="none" role="img" aria-label="SPAF — Smart Pentesting Automation Framework">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#06080b"/>
+      <stop offset="0.55" stop-color="#0a0e12"/>
+      <stop offset="1" stop-color="#0d0705"/>
+    </linearGradient>
+    <linearGradient id="amber" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ffcf5c"/>
+      <stop offset="0.55" stop-color="#E0A82E"/>
+      <stop offset="1" stop-color="#ff7a3b"/>
+    </linearGradient>
+    <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse">
+      <path d="M48 0H0V48" fill="none" stroke="#1b2733" stroke-width="1" stroke-opacity="0.45"/>
+    </pattern>
+    <radialGradient id="vig" cx="0.5" cy="0.42" r="0.8">
+      <stop offset="0.5" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0.6"/>
+    </radialGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <rect width="1280" height="640" fill="url(#bg)"/>
+  <rect width="1280" height="640" fill="url(#grid)"/>
+  <rect width="1280" height="640" fill="url(#vig)"/>
+  <rect x="0" y="0" width="1280" height="6" fill="url(#amber)"/>
+  <rect x="0" y="634" width="1280" height="6" fill="url(#amber)" opacity="0.5"/>
+
+  <text class="m" x="640" y="200" font-family="'JetBrains Mono','Courier New',monospace" font-weight="800" font-size="118" fill="url(#amber)" filter="url(#glow)" text-anchor="middle" letter-spacing="6">SPAF</text>
+  <text x="640" y="258" font-family="'JetBrains Mono','Courier New',monospace" font-size="27" fill="#c7d0da" text-anchor="middle" letter-spacing="3">Smart Pentesting Automation Framework</text>
+  <text x="640" y="306" font-family="'JetBrains Mono','Courier New',monospace" font-size="20" fill="#9AA6B2" text-anchor="middle" letter-spacing="2">AI-orchestrated offensive security — one target in, a written assessment out</text>
+
+  <!-- pipeline chips -->
+  <g font-family="'JetBrains Mono','Courier New',monospace" font-size="20" text-anchor="middle">
+    <g transform="translate(360,380)">
+      <rect x="-110" y="-26" width="220" height="52" rx="10" fill="#0e141a" stroke="#1b2733"/>
+      <text y="7" fill="#E0A82E">discovery</text>
+    </g>
+    <text x="500" y="387" fill="#E0A82E" font-size="24">→</text>
+    <g transform="translate(640,380)">
+      <rect x="-110" y="-26" width="220" height="52" rx="10" fill="#0e141a" stroke="#1b2733"/>
+      <text y="7" fill="#E0A82E">validation</text>
+    </g>
+    <text x="780" y="387" fill="#E0A82E" font-size="24">→</text>
+    <g transform="translate(920,380)">
+      <rect x="-110" y="-26" width="220" height="52" rx="10" fill="#0e141a" stroke="#1b2733"/>
+      <text y="7" fill="#E0A82E">report</text>
+    </g>
+  </g>
+
+  <!-- interfaces -->
+  <g font-family="'JetBrains Mono','Courier New',monospace" font-size="19" text-anchor="middle" fill="#9AA6B2">
+    <text x="640" y="470" letter-spacing="2">CLI  ·  HTTP API  ·  MCP  ·  Dashboard</text>
+    <text x="640" y="508" fill="#6b7682" font-size="17">Gemini · Claude · Ollama · LM Studio · Shodan</text>
+  </g>
+
+  <!-- footer line -->
+  <text x="640" y="582" font-family="'JetBrains Mono','Courier New',monospace" font-size="18" fill="#E0A82E" text-anchor="middle">$ pip install spaf</text>
+  <text x="640" y="610" font-family="'JetBrains Mono','Courier New',monospace" font-size="14" fill="#6b7682" text-anchor="middle">github.com/geevarghesekthomas84-sys/spaf · authorized testing only</text>
+</svg>

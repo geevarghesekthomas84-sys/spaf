@@ -5,6 +5,10 @@
 #   docker compose up -d --build        # gateway + api (SQLite, zero-setup)
 #   docker compose --profile mongo up -d --build   # add MongoDB
 #
+# Runs on Podman too (same file):  podman compose up -d --build
+#   rootless 80/443 → run rootful or sysctl net.ipv4.ip_unprivileged_port_start=80
+#   SELinux        → add :Z to the Caddyfile mount below (see deploy/README.md)
+#
 # Only the gateway is exposed to the network; the API listens on an internal
 # network and is reached only through Caddy.
 # ─────────────────────────────────────────────────────────────────────────────

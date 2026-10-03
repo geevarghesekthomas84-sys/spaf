@@ -1,3 +1,7 @@
+# SPAF dev stack (MongoDB + CLI). Works with Docker or Podman:
+#   docker-compose up -d        |  podman compose up -d
+# On SELinux hosts, add :z to the bind mounts below if you hit "permission
+# denied" (e.g. ./scope.json:/app/scope.json:z), or use --security-opt label=disable.
 version: '3.9'
 
 services:

@@ -281,7 +281,7 @@ spaf setup                       # interactive configuration wizard
 
 ---
 
-## ◇ Docker
+## ◇ Docker / Podman
 
 The fastest way to get running — no manual setup of MongoDB or Python environment needed.
 
@@ -302,6 +302,19 @@ docker-compose run spaf export target.com --format csv
 
 > **Note:** `docker-compose.yml` uses `network_mode: host` so Nmap/RustScan can reach real targets.  
 > `.env` is automatically mounted from the project root — add your API keys there.
+
+**Podman** works with the same files — swap the command:
+
+```bash
+podman compose up -d                 # Podman 4.4+ (uses the compose provider)
+# or: podman-compose up -d
+podman compose run spaf recon target.com
+```
+
+> On **SELinux** hosts (Fedora/RHEL), if a bind mount gives "permission denied",
+> add a `:z` (shared) / `:Z` (private) suffix to the volume — e.g.
+> `./scope.json:/app/scope.json:z` — or run with `--security-opt label=disable`.
+> Rootless Podman already has host networking; `network_mode: host` is honored.
 
 ---
 

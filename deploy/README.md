@@ -28,6 +28,28 @@ Add MongoDB instead of SQLite:
 docker compose --profile mongo up -d --build
 ```
 
+### Podman
+
+The stack runs on Podman with the same files — it's Docker-API compatible:
+
+```bash
+podman compose up -d --build         # Podman 4.4+ (compose provider)
+# or: podman-compose up -d --build
+```
+
+Two Podman specifics for this hardened stack:
+
+- **Ports 80/443 (rootless).** Binding privileged ports rootless is blocked by
+  default. Either run rootful (`sudo podman compose up -d --build`), lower the
+  threshold once (`sudo sysctl net.ipv4.ip_unprivileged_port_start=80`), or
+  publish high ports instead (edit the gateway `ports:` to `8080:80`,`8443:443`).
+- **SELinux (Fedora/RHEL).** The gateway bind-mounts `./Caddyfile`. If it reports
+  "permission denied", relabel it with a `:Z` suffix —
+  `./Caddyfile:/etc/caddy/Caddyfile:ro,Z` — or add `--security-opt label=disable`.
+
+Everything else (read-only root FS, `cap_drop`, `no-new-privileges`, the `/data`
+volume, the `mongo` profile) behaves identically under Podman.
+
 ## What you get
 
 Through the gateway (replace `localhost` with your `SPAF_DOMAIN`):

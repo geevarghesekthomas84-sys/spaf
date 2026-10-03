@@ -12,7 +12,7 @@
 
 <br>
 
-[![version](https://img.shields.io/badge/version-1.5.0-39FF41?style=flat-square&labelColor=04150a)](CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-1.11.0-39FF41?style=flat-square&labelColor=04150a)](CHANGELOG.md)
 [![CI](https://img.shields.io/github/actions/workflow/status/geevarghesekthomas84-sys/spaf/ci.yml?branch=master&style=flat-square&label=ci&labelColor=04150a&color=39FF41)](https://github.com/geevarghesekthomas84-sys/spaf/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.11+-2b3a2f?style=flat-square&labelColor=04150a)](https://python.org)
 [![License](https://img.shields.io/badge/license-MIT-2b3a2f?style=flat-square&labelColor=04150a)](LICENSE)
@@ -45,6 +45,7 @@ spaf agent target.com         # the AI plans → runs → reports, end to end
 - **Scope-safe & stealthy** — engagement-scope enforcement, TOR, proxy rotation, UA randomization.
 - **Zero-setup storage** — MongoDB, or a local SQLite file with nothing to install.
 - **Share it** — dark-mode HTML/JSON reports, CSV export, and scan diffing.
+- **Run it as a platform** — a headless HTTP API (REST + WebSocket), an **MCP server/client**, a built-in **web dashboard** + Prometheus metrics, a plugin SDK, a hardened Docker/Caddy deploy, and **multi-engagement workspaces with RBAC**.
 
 ---
 

@@ -444,8 +444,11 @@ curl -s -XPOST localhost:8000/scans -H "X-API-Key: $KEY" \
 | Endpoint | What it does |
 |---|---|
 | `GET /health`, `GET /version` | open health/version |
+| `GET /metrics` | open Prometheus metrics (aggregate only) |
+| `GET /`, `GET /dashboard` | built-in web console (open) |
 | `GET /scope`, `POST /scope` | view / add engagement scope |
 | `GET /tools` | external-tool install status |
+| `GET /audit` | recent active-action audit entries |
 | `POST /scans`, `POST /agent` | start a scan / agent job (202 + job id) |
 | `GET /jobs/{id}` | job status + typed result |
 | `WS /ws/jobs/{id}` | live progress & findings |
@@ -453,6 +456,30 @@ curl -s -XPOST localhost:8000/scans -H "X-API-Key: $KEY" \
 
 > Bind `--host 0.0.0.0` only behind the reverse-proxy gateway (TLS/auth) — see
 > the roadmap. Interactive API docs are at `/docs`.
+
+---
+
+## ◇ Dashboard & metrics <sup>new in 1.10</sup>
+
+The API ships a **self-contained web console** and **Prometheus metrics** — no
+extra install beyond `spaf[api]`.
+
+```bash
+spaf serve
+open http://127.0.0.1:8000/          # the dashboard (enter your API key to connect)
+curl -s localhost:8000/metrics       # Prometheus scrape target
+```
+
+- **Dashboard (`/`)** — a single vanilla-JS page in the CLI's amber/steel theme:
+  connect with your `X-API-Key`, see scope/tools status, launch a scan or an
+  agent run (with dry-run), watch **live events over WebSocket**, and read the
+  findings and audit tables as they fill.
+- **Metrics (`/metrics`)** — scans started/completed/failed by module, findings
+  by severity, agent runs by mode, and auth failures, in Prometheus text format.
+  Labels are **aggregate only** (no target names), so the endpoint is safe to
+  scrape without leaking engagement data. Left open so scrapers need no key.
+- **Audit (`/audit`)** — key-protected tail of the JSONL audit log: the
+  who/what/target/when record written for every active action.
 
 ---
 

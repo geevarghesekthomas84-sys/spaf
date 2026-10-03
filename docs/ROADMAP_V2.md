@@ -16,7 +16,7 @@ independently shippable and leaves `main` green.
 **Status:** ✅ Phase 0 (service layer) · ✅ Phase 1 (HTTP API) ·
 ✅ Phase 2 minimal (MCP server, stdio) · ✅ Phase 3 (AI orchestration) ·
 ✅ Phase 5 (secure gateway + hardened deploy) · ✅ Phase 4 (MCP client + plugin
-SDK) — shipped. Next: Phase 6 (observability + web dashboard) or Phase 7
+SDK) · ✅ Phase 6 (observability + web dashboard) — shipped. Next: Phase 7
 (multi-engagement + RBAC).
 
 ---
@@ -205,17 +205,25 @@ ordered by leverage; 2 (MCP) and 3 (orchestration) are the headline.
 - **Acceptance:** `docker compose up` yields a TLS-fronted, authenticated SPAF;
   an unauthenticated request is rejected at the edge; CI scans images.
 
-### Phase 6 — Observability + web dashboard
+### Phase 6 — Observability + web dashboard  *(shipped — v1.10.0)*
 - **Goal:** see runs, findings, and agent reasoning live; keep an audit trail.
-- **Build:** structured JSON logs, an **audit log** (who/what/target/when for
-  every active action), Prometheus metrics + OpenTelemetry traces, and a small
-  **web dashboard** (live findings, agent timeline, reports) talking to the API
-  over WebSocket.
-- **Stack:** `structlog`, OpenTelemetry, Prometheus, a light frontend (HTMX or a
-  small React/Vite app) served behind the gateway.
-- **Deliverable:** `spaf/telemetry/`, `dashboard/`.
+- **Shipped:**
+  - **Prometheus metrics** at `GET /metrics` (`spaf/api/metrics.py`) — a
+    dependency-free counter registry (scans started/completed/failed by module,
+    findings by severity, agent runs by mode, auth failures). Aggregate labels
+    only, so scraping leaks no engagement data; endpoint left open for scrapers.
+  - **Audit view** at `GET /audit` — key-protected tail of the JSONL audit log
+    (the who/what/target/when record already written for every active action).
+  - **Web dashboard** at `GET /` and `/dashboard` — a self-contained vanilla-JS
+    console (`spaf/api/static/dashboard.html`) in the CLI's amber/steel theme:
+    API-key connect, status/scope/tools, a run panel (recon/toolkit/scan/webscan/
+    crawl/agent with dry-run), a live WebSocket event log, findings table, and the
+    audit view.
+- **Deferred:** `structlog` structured logs and OpenTelemetry traces (the
+  hand-rolled Prometheus endpoint + JSONL audit cover the acceptance criteria
+  without new dependencies).
 - **Acceptance:** run an agent; watch it live in the dashboard; audit log records
-  every active step; `/metrics` scrapes.
+  every active step; `/metrics` scrapes. ✅
 
 ### Phase 7 — Multi-engagement & RBAC  *(stretch)*
 - **Goal:** teams and multiple concurrent engagements.

@@ -3,6 +3,26 @@
 All notable changes to SPAF are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.10.0]
+
+### Added
+- **Observability + built-in web dashboard** —
+  - **Prometheus metrics (`spaf/api/metrics.py`, `GET /metrics`)** — a tiny,
+    dependency-free counter registry rendered in Prometheus text format. Tracks
+    `spaf_scans_started/completed/failed_total{module}`,
+    `spaf_findings_total{severity}`, `spaf_agent_runs_total{mode}`, and
+    `spaf_auth_failures_total`. Only aggregate labels (no target names), so the
+    endpoint is safe to scrape without leaking engagement data. Left open (no key)
+    for scrapers.
+  - **Audit view (`GET /audit`)** — key-protected tail of the JSONL audit log for
+    recent active actions.
+  - **Web dashboard (`GET /` and `/dashboard`)** — a self-contained, vanilla-JS
+    console (served from `spaf/api/static/dashboard.html`) matching the CLI's
+    amber/steel theme: API-key connect, status/scope/tools, a run panel
+    (recon/toolkit/scan/webscan/crawl/agent with dry-run), a live WebSocket event
+    log, a findings table, and the audit view.
+  - Auth failures now increment `spaf_auth_failures_total`.
+
 ## [1.9.0]
 
 ### Added

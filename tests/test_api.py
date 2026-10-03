@@ -89,3 +89,35 @@ def test_tools_endpoint(client):
 def test_scope_add(client):
     r = client.post("/scope", json={"value": "new.com"}, headers=H)
     assert "new.com" in r.json()["in_scope"]
+
+
+def test_dashboard_served(client):
+    r = client.get("/")
+    assert r.status_code == 200 and "SPAF" in r.text
+    assert client.get("/dashboard").status_code == 200
+
+
+def test_metrics_open_and_records(client):
+    # metrics endpoint is open (no key) and includes counters after a scan
+    r = client.post("/scans", json={"module": "webscan", "target": "https://example.com",
+                                    "options": {"no_db": True}}, headers=H)
+    jid = r.json()["job_id"]
+    import time as _t
+    for _ in range(30):
+        if client.get(f"/jobs/{jid}", headers=H).json()["status"] != "running":
+            break
+        _t.sleep(0.05)
+    m = client.get("/metrics")
+    assert m.status_code == 200
+    assert "spaf_scans_started_total" in m.text
+    assert "spaf_findings_total" in m.text
+
+
+def test_auth_failure_metric(client):
+    client.get("/scope")  # no key -> 401
+    assert "spaf_auth_failures_total" in client.get("/metrics").text
+
+
+def test_audit_requires_key(client):
+    assert client.get("/audit").status_code == 401
+    assert client.get("/audit", headers=H).status_code == 200

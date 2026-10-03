@@ -1,25 +1,30 @@
 """
 SPAF HTTP API.
 
-Everything the service does, over REST, with live scan events over WebSocket.
-Secure by default: all endpoints except /health and /version require an API key;
-active scans are scope-gated (out-of-scope → 403). Scans and agent runs are
-asynchronous jobs — POST returns a job id, progress streams over
+Everything the service does, over REST, with live scan events over WebSocket,
+Prometheus metrics, an audit view, and a built-in web dashboard. Secure by
+default: all endpoints except /health, /version, /metrics and the dashboard
+require an API key; active scans are scope-gated (out-of-scope → 403). Scans and
+agent runs are asynchronous jobs — POST returns a job id, progress streams over
 `/ws/jobs/{id}`, and the final result is available at GET /jobs/{id}.
 """
 
+import json
+import os
 from typing import Any, Dict, Optional
 
-from fastapi import Depends, FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import Depends, FastAPI, Header, HTTPException, WebSocket, WebSocketDisconnect, status
+from fastapi.responses import HTMLResponse, PlainTextResponse
 from pydantic import BaseModel, Field
 
 from spaf.service import SpafService, ScopeError, EventBus
-from spaf.api.auth import load_keys, make_auth_dependency
+from spaf.api.auth import load_keys
 from spaf.api.jobs import JobManager
+from spaf.api.metrics import Metrics
 
 
 class ScanRequest(BaseModel):
-    module: str = Field(description="recon | toolkit | scan | webscan | crawl")
+    module: str = Field(description="recon | toolkit | scan | webscan | crawl | <plugin>")
     target: str
     options: Dict[str, Any] = Field(default_factory=dict)
 
@@ -44,9 +49,26 @@ def create_app(scope_file: str = "scope.json") -> FastAPI:
     svc = SpafService(scope_file=scope_file)
     jobs = JobManager()
     keys = load_keys()
-    auth = Depends(make_auth_dependency(keys))
-
+    metrics = Metrics()
     app.state.api_keys = keys  # used by the WebSocket handler
+
+    async def require_key(x_api_key: str = Header(default="")) -> str:
+        if x_api_key not in keys:
+            metrics.inc("spaf_auth_failures_total")
+            raise HTTPException(status.HTTP_401_UNAUTHORIZED,
+                                "Missing or invalid API key (send it in 'X-API-Key').")
+        return x_api_key
+    auth = Depends(require_key)
+
+    def _record_scan(result: Dict[str, Any]) -> None:
+        module = result.get("module", "unknown")
+        if result.get("status") == "completed":
+            metrics.inc("spaf_scans_completed_total", {"module": module})
+        else:
+            metrics.inc("spaf_scans_failed_total", {"module": module})
+        for sev, n in (result.get("counts") or {}).items():
+            if n:
+                metrics.inc("spaf_findings_total", {"severity": sev}, n)
 
     # ── Open endpoints ────────────────────────────────────────────────
     @app.get("/health")
@@ -56,6 +78,15 @@ def create_app(scope_file: str = "scope.json") -> FastAPI:
     @app.get("/version")
     async def version():
         return {"version": _version()}
+
+    @app.get("/metrics")
+    async def prometheus():
+        return PlainTextResponse(metrics.render(), media_type="text/plain; version=0.0.4")
+
+    @app.get("/", response_class=HTMLResponse)
+    @app.get("/dashboard", response_class=HTMLResponse)
+    async def dashboard():
+        return HTMLResponse(_dashboard_html())
 
     # ── Scope & status ────────────────────────────────────────────────
     @app.get("/scope", dependencies=[auth])
@@ -70,14 +101,21 @@ def create_app(scope_file: str = "scope.json") -> FastAPI:
     async def tools():
         return {"tools": [t.model_dump() for t in svc.tools_status()]}
 
+    @app.get("/audit", dependencies=[auth])
+    async def audit(limit: int = 100):
+        return {"entries": _tail_audit(limit)}
+
     # ── Scans & agent (async jobs) ────────────────────────────────────
     @app.post("/scans", dependencies=[auth], status_code=202)
     async def start_scan(req: ScanRequest):
         _ensure_in_scope(svc, req.target)
+        metrics.inc("spaf_scans_started_total", {"module": req.module})
 
         async def run(bus: EventBus):
             r = await svc.run_module(req.module, req.target, req.options, bus=bus, surface="api")
-            return r.model_dump(mode="json")
+            payload = r.model_dump(mode="json")
+            _record_scan(payload)
+            return payload
 
         job = jobs.start("scan", req.target, run)
         return {"job_id": job.id, "status": job.status}
@@ -86,11 +124,16 @@ def create_app(scope_file: str = "scope.json") -> FastAPI:
     async def start_agent(req: AgentRequest):
         if not req.dry_run:
             _ensure_in_scope(svc, req.target)
+        metrics.inc("spaf_agent_runs_total", {"mode": "plan" if req.dry_run else "active"})
 
         async def run(bus: EventBus):
             r = await svc.run_agent(req.target, req.goal, dry_run=req.dry_run,
                                     aggressive=req.aggressive, bus=bus, surface="api")
-            return r.model_dump(mode="json")
+            payload = r.model_dump(mode="json")
+            for sev, n in (payload.get("counts") or {}).items():
+                if n:
+                    metrics.inc("spaf_findings_total", {"severity": sev}, n)
+            return payload
 
         job = jobs.start("agent", req.target, run)
         return {"job_id": job.id, "status": job.status}
@@ -132,8 +175,7 @@ def create_app(scope_file: str = "scope.json") -> FastAPI:
             async for ev in job.bus.subscribe():
                 await ws.send_json({"kind": ev.kind, "module": ev.module,
                                     "message": ev.message, "pct": ev.pct, "data": ev.data})
-            await ws.send_json({"kind": "done", "status": job.status,
-                                "error": job.error})
+            await ws.send_json({"kind": "done", "status": job.status, "error": job.error})
         except WebSocketDisconnect:
             pass
         finally:
@@ -150,6 +192,29 @@ def _ensure_in_scope(svc: SpafService, target: str) -> None:
         svc._check_scope(target, "api")  # noqa: SLF001 - intentional internal use
     except ScopeError as exc:
         raise HTTPException(403, str(exc))
+
+
+def _tail_audit(limit: int) -> list:
+    from spaf.service.audit import AUDIT_PATH
+    if not os.path.exists(AUDIT_PATH):
+        return []
+    try:
+        with open(AUDIT_PATH, encoding="utf-8") as f:
+            lines = f.readlines()[-max(1, min(limit, 1000)):]
+        out = []
+        for ln in lines:
+            try:
+                out.append(json.loads(ln))
+            except json.JSONDecodeError:
+                continue
+        return list(reversed(out))
+    except OSError:
+        return []
+
+
+def _dashboard_html() -> str:
+    from importlib.resources import files
+    return (files("spaf.api") / "static" / "dashboard.html").read_text(encoding="utf-8")
 
 
 def _version() -> str:

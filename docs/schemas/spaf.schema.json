@@ -1,0 +1,471 @@
+{
+  "$defs": {
+    "AgentPlanStep": {
+      "properties": {
+        "module": {
+          "title": "Module",
+          "type": "string"
+        },
+        "reason": {
+          "default": "",
+          "title": "Reason",
+          "type": "string"
+        },
+        "scope_ok": {
+          "default": true,
+          "title": "Scope Ok",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "module"
+      ],
+      "title": "AgentPlanStep",
+      "type": "object"
+    },
+    "AgentResult": {
+      "$defs": {
+        "AgentPlanStep": {
+          "properties": {
+            "module": {
+              "title": "Module",
+              "type": "string"
+            },
+            "reason": {
+              "default": "",
+              "title": "Reason",
+              "type": "string"
+            },
+            "scope_ok": {
+              "default": true,
+              "title": "Scope Ok",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "module"
+          ],
+          "title": "AgentPlanStep",
+          "type": "object"
+        },
+        "Finding": {
+          "properties": {
+            "detail": {
+              "default": "",
+              "title": "Detail",
+              "type": "string"
+            },
+            "discovered_at": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Discovered At"
+            },
+            "extra": {
+              "additionalProperties": true,
+              "title": "Extra",
+              "type": "object"
+            },
+            "recommendation": {
+              "default": "",
+              "title": "Recommendation",
+              "type": "string"
+            },
+            "scan_type": {
+              "default": "",
+              "title": "Scan Type",
+              "type": "string"
+            },
+            "severity": {
+              "default": "Info",
+              "title": "Severity",
+              "type": "string"
+            },
+            "severity_order": {
+              "default": 5,
+              "title": "Severity Order",
+              "type": "integer"
+            },
+            "target": {
+              "title": "Target",
+              "type": "string"
+            },
+            "vuln_type": {
+              "title": "Vuln Type",
+              "type": "string"
+            }
+          },
+          "required": [
+            "target",
+            "vuln_type"
+          ],
+          "title": "Finding",
+          "type": "object"
+        }
+      },
+      "properties": {
+        "assessment": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Assessment"
+        },
+        "counts": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Counts",
+          "type": "object"
+        },
+        "dry_run": {
+          "default": true,
+          "title": "Dry Run",
+          "type": "boolean"
+        },
+        "findings": {
+          "items": {
+            "$ref": "#/$defs/Finding"
+          },
+          "title": "Findings",
+          "type": "array"
+        },
+        "goal": {
+          "default": "",
+          "title": "Goal",
+          "type": "string"
+        },
+        "plan": {
+          "items": {
+            "$ref": "#/$defs/AgentPlanStep"
+          },
+          "title": "Plan",
+          "type": "array"
+        },
+        "target": {
+          "title": "Target",
+          "type": "string"
+        }
+      },
+      "required": [
+        "target"
+      ],
+      "title": "AgentResult",
+      "type": "object"
+    },
+    "Finding": {
+      "properties": {
+        "detail": {
+          "default": "",
+          "title": "Detail",
+          "type": "string"
+        },
+        "discovered_at": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Discovered At"
+        },
+        "extra": {
+          "additionalProperties": true,
+          "title": "Extra",
+          "type": "object"
+        },
+        "recommendation": {
+          "default": "",
+          "title": "Recommendation",
+          "type": "string"
+        },
+        "scan_type": {
+          "default": "",
+          "title": "Scan Type",
+          "type": "string"
+        },
+        "severity": {
+          "default": "Info",
+          "title": "Severity",
+          "type": "string"
+        },
+        "severity_order": {
+          "default": 5,
+          "title": "Severity Order",
+          "type": "integer"
+        },
+        "target": {
+          "title": "Target",
+          "type": "string"
+        },
+        "vuln_type": {
+          "title": "Vuln Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "target",
+        "vuln_type"
+      ],
+      "title": "Finding",
+      "type": "object"
+    },
+    "ScanResult": {
+      "$defs": {
+        "Finding": {
+          "properties": {
+            "detail": {
+              "default": "",
+              "title": "Detail",
+              "type": "string"
+            },
+            "discovered_at": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Discovered At"
+            },
+            "extra": {
+              "additionalProperties": true,
+              "title": "Extra",
+              "type": "object"
+            },
+            "recommendation": {
+              "default": "",
+              "title": "Recommendation",
+              "type": "string"
+            },
+            "scan_type": {
+              "default": "",
+              "title": "Scan Type",
+              "type": "string"
+            },
+            "severity": {
+              "default": "Info",
+              "title": "Severity",
+              "type": "string"
+            },
+            "severity_order": {
+              "default": 5,
+              "title": "Severity Order",
+              "type": "integer"
+            },
+            "target": {
+              "title": "Target",
+              "type": "string"
+            },
+            "vuln_type": {
+              "title": "Vuln Type",
+              "type": "string"
+            }
+          },
+          "required": [
+            "target",
+            "vuln_type"
+          ],
+          "title": "Finding",
+          "type": "object"
+        }
+      },
+      "properties": {
+        "completed_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Completed At"
+        },
+        "counts": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Counts",
+          "type": "object"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error"
+        },
+        "findings": {
+          "items": {
+            "$ref": "#/$defs/Finding"
+          },
+          "title": "Findings",
+          "type": "array"
+        },
+        "module": {
+          "title": "Module",
+          "type": "string"
+        },
+        "scan_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Scan Id"
+        },
+        "started_at": {
+          "format": "date-time",
+          "title": "Started At",
+          "type": "string"
+        },
+        "status": {
+          "default": "completed",
+          "title": "Status",
+          "type": "string"
+        },
+        "target": {
+          "title": "Target",
+          "type": "string"
+        }
+      },
+      "required": [
+        "module",
+        "target"
+      ],
+      "title": "ScanResult",
+      "type": "object"
+    },
+    "ScanSummary": {
+      "properties": {
+        "findings_count": {
+          "default": 0,
+          "title": "Findings Count",
+          "type": "integer"
+        },
+        "module": {
+          "title": "Module",
+          "type": "string"
+        },
+        "scan_id": {
+          "title": "Scan Id",
+          "type": "string"
+        },
+        "started_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Started At"
+        },
+        "status": {
+          "default": "",
+          "title": "Status",
+          "type": "string"
+        },
+        "target": {
+          "title": "Target",
+          "type": "string"
+        }
+      },
+      "required": [
+        "scan_id",
+        "target",
+        "module"
+      ],
+      "title": "ScanSummary",
+      "type": "object"
+    },
+    "ScopeState": {
+      "properties": {
+        "enforced": {
+          "default": false,
+          "title": "Enforced",
+          "type": "boolean"
+        },
+        "in_scope": {
+          "items": {
+            "type": "string"
+          },
+          "title": "In Scope",
+          "type": "array"
+        },
+        "out_of_scope": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Out Of Scope",
+          "type": "array"
+        }
+      },
+      "title": "ScopeState",
+      "type": "object"
+    },
+    "ToolStatus": {
+      "properties": {
+        "installed": {
+          "title": "Installed",
+          "type": "boolean"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "role": {
+          "default": "",
+          "title": "Role",
+          "type": "string"
+        },
+        "url": {
+          "default": "",
+          "title": "Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "installed"
+      ],
+      "title": "ToolStatus",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "JSON Schema for every SPAF result model (CLI/API/MCP).",
+  "title": "SPAF result contract"
+}

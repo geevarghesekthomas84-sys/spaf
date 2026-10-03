@@ -1,0 +1,60 @@
+{
+  "properties": {
+    "detail": {
+      "default": "",
+      "title": "Detail",
+      "type": "string"
+    },
+    "discovered_at": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Discovered At"
+    },
+    "extra": {
+      "additionalProperties": true,
+      "title": "Extra",
+      "type": "object"
+    },
+    "recommendation": {
+      "default": "",
+      "title": "Recommendation",
+      "type": "string"
+    },
+    "scan_type": {
+      "default": "",
+      "title": "Scan Type",
+      "type": "string"
+    },
+    "severity": {
+      "default": "Info",
+      "title": "Severity",
+      "type": "string"
+    },
+    "severity_order": {
+      "default": 5,
+      "title": "Severity Order",
+      "type": "integer"
+    },
+    "target": {
+      "title": "Target",
+      "type": "string"
+    },
+    "vuln_type": {
+      "title": "Vuln Type",
+      "type": "string"
+    }
+  },
+  "required": [
+    "target",
+    "vuln_type"
+  ],
+  "title": "Finding",
+  "type": "object"
+}

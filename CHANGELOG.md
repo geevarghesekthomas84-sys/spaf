@@ -3,6 +3,18 @@
 All notable changes to SPAF are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.13.0]
+
+### Added
+- **Machine-readable result schema (`spaf/service/schema.py`)** — JSON Schema for
+  every result model (`Finding`, `ScanResult`, `AgentResult`, …) so downstream
+  tooling validates SPAF output instead of reverse-engineering it. Exposed via
+  the `spaf schema` CLI command (`--write <dir>`, `--model <name>`), an open
+  `GET /schema` API endpoint, and checked-in schemas under `docs/schemas/`.
+- **Architecture guide (`docs/ARCHITECTURE.md`)** — layering, request flow, the
+  result contract, and the three extension seams (scan modules, AI providers,
+  output consumers), plus the governance/safety seams.
+
 ## [1.12.0]
 
 ### Added — safety & hardening

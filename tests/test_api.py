@@ -121,3 +121,10 @@ def test_auth_failure_metric(client):
 def test_audit_requires_key(client):
     assert client.get("/audit").status_code == 401
     assert client.get("/audit", headers=H).status_code == 200
+
+
+def test_schema_endpoint_open(client):
+    r = client.get("/schema")  # no key — contract is public
+    assert r.status_code == 200
+    body = r.json()
+    assert "$defs" in body and "Finding" in body["$defs"]

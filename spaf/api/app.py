@@ -172,6 +172,11 @@ def create_app(scope_file: str = "scope.json") -> FastAPI:
     async def prometheus():
         return PlainTextResponse(metrics.render(), media_type="text/plain; version=0.0.4")
 
+    @app.get("/schema")
+    async def schema():
+        from spaf.service.schema import combined_schema
+        return combined_schema()
+
     @app.get("/", response_class=HTMLResponse)
     @app.get("/dashboard", response_class=HTMLResponse)
     async def dashboard():

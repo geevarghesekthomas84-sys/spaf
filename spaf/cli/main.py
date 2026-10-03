@@ -1250,6 +1250,30 @@ def engagements(
 
 
 @app.command()
+def schema(
+    write: Optional[str] = typer.Option(None, "--write", help="Write schema files to this directory"),
+    model: Optional[str] = typer.Option(None, "--model", help="Print only this model's schema (e.g. Finding)"),
+):
+    """Emit the machine-readable JSON Schema for SPAF's result models."""
+    from spaf.service import schema as schema_mod
+    if write:
+        paths = schema_mod.write_schemas(write)
+        from spaf.utils import ui
+        console.print(f"[{ui.OK}]wrote[/] {len(paths)} schema file(s) to [dim]{write}[/dim]")
+        for p in paths:
+            console.print(f"  [{ui.FAINT}]·[/] {p}")
+        return
+    if model:
+        schemas = schema_mod.build_schemas()
+        if model not in schemas:
+            console.print(f"[red]unknown model '{model}'.[/red] Valid: {', '.join(schemas)}")
+            raise typer.Exit(1)
+        print(json.dumps(schemas[model], indent=2, sort_keys=True))
+        return
+    print(json.dumps(schema_mod.combined_schema(), indent=2, sort_keys=True))
+
+
+@app.command()
 def report(
     target: Optional[str] = typer.Argument(None, help="Target to generate report for"),
     format: str = typer.Option("both", "--format", help="Report format: html|json|both"),

@@ -1,0 +1,23 @@
+{
+  "properties": {
+    "module": {
+      "title": "Module",
+      "type": "string"
+    },
+    "reason": {
+      "default": "",
+      "title": "Reason",
+      "type": "string"
+    },
+    "scope_ok": {
+      "default": true,
+      "title": "Scope Ok",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "module"
+  ],
+  "title": "AgentPlanStep",
+  "type": "object"
+}

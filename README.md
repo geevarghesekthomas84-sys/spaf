@@ -575,6 +575,17 @@ spaf mcp-tools          # list tools exposed by the configured servers
 > Plugins and external MCP tools run through the CLI/API/service — they are not
 > auto-added to the autonomous agent's fixed action set (that stays curated).
 
+**Machine-readable output** — every surface returns the same typed models; emit
+their **JSON Schema** so downstream tooling can validate SPAF output:
+
+```bash
+spaf schema --write docs/schemas     # or: GET /schema over the API
+```
+
+> Architecture, request flow, and all three extension seams (modules, providers,
+> output consumers) are documented in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md);
+> the checked-in schemas live in [`docs/schemas/`](docs/schemas/).
+
 ---
 
 ## ◇ Engagements & RBAC <sup>new in 1.11</sup>

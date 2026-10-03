@@ -1,0 +1,28 @@
+{
+  "properties": {
+    "installed": {
+      "title": "Installed",
+      "type": "boolean"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "role": {
+      "default": "",
+      "title": "Role",
+      "type": "string"
+    },
+    "url": {
+      "default": "",
+      "title": "Url",
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "installed"
+  ],
+  "title": "ToolStatus",
+  "type": "object"
+}

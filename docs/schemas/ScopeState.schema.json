@@ -1,0 +1,25 @@
+{
+  "properties": {
+    "enforced": {
+      "default": false,
+      "title": "Enforced",
+      "type": "boolean"
+    },
+    "in_scope": {
+      "items": {
+        "type": "string"
+      },
+      "title": "In Scope",
+      "type": "array"
+    },
+    "out_of_scope": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Out Of Scope",
+      "type": "array"
+    }
+  },
+  "title": "ScopeState",
+  "type": "object"
+}

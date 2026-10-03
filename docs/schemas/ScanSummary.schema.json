@@ -1,0 +1,46 @@
+{
+  "properties": {
+    "findings_count": {
+      "default": 0,
+      "title": "Findings Count",
+      "type": "integer"
+    },
+    "module": {
+      "title": "Module",
+      "type": "string"
+    },
+    "scan_id": {
+      "title": "Scan Id",
+      "type": "string"
+    },
+    "started_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Started At"
+    },
+    "status": {
+      "default": "",
+      "title": "Status",
+      "type": "string"
+    },
+    "target": {
+      "title": "Target",
+      "type": "string"
+    }
+  },
+  "required": [
+    "scan_id",
+    "target",
+    "module"
+  ],
+  "title": "ScanSummary",
+  "type": "object"
+}

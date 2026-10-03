@@ -43,6 +43,11 @@ services:
       - AI_PROVIDER=${AI_PROVIDER:-google}
       - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      # Multi-engagement + RBAC (optional; see SECURITY_HARDENING.md).
+      # SPAF_PRINCIPALS maps API keys to roles; SPAF_AUTH_SIGNING_KEY mints
+      # tamper-evident engagement authorizations. Unset = single-key lead.
+      - SPAF_PRINCIPALS=${SPAF_PRINCIPALS:-}
+      - SPAF_AUTH_SIGNING_KEY=${SPAF_AUTH_SIGNING_KEY:-}
     expose:
       - "8000"
     volumes:

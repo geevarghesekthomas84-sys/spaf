@@ -63,7 +63,7 @@ jobs:
         run: |
           pip install build
           python -m build
-      - name: Verify all subpackages are packaged
+      - name: Verify all subpackages and package-data are packaged
         run: |
           python - <<'PY'
           import glob, zipfile, os, sys
@@ -73,12 +73,19 @@ jobs:
           required = {
               "spaf", "spaf/cli", "spaf/core", "spaf/database",
               "spaf/modules", "spaf/reports", "spaf/utils",
+              # platform packages (1.6 → 1.11)
+              "spaf/agent", "spaf/service", "spaf/api", "spaf/mcp",
+              "spaf/orchestration", "spaf/plugins", "spaf/workspaces",
           }
           missing = required - pkgs
           if missing:
-              print("Missing packages in wheel:", missing)
+              print("Missing packages in wheel:", sorted(missing))
               sys.exit(1)
-          print("All packages present in wheel.")
+          # package-data that ships inside the wheel (the web dashboard)
+          if not any(n.endswith("spaf/api/static/dashboard.html") for n in names):
+              print("Missing package-data: spaf/api/static/dashboard.html")
+              sys.exit(1)
+          print("All packages and package-data present in wheel.")
           PY
       - uses: actions/upload-artifact@v4
         with:

@@ -26,6 +26,7 @@ ENV SPAF_DB_BACKEND=sqlite \
     SPAF_LOG_DIR=/data/logs \
     SPAF_AUDIT_LOG=/data/logs/audit.jsonl \
     SPAF_CACHE_PATH=/data/logs/ai_cache.db \
+    SPAF_ENGAGEMENTS_DIR=/data/engagements \
     PYTHONUNBUFFERED=1
 
 USER 10001

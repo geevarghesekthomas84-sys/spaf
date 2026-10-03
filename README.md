@@ -20,6 +20,15 @@
 
 <sub>AI engines&nbsp; · &nbsp;Google Gemini&nbsp; · &nbsp;Anthropic Claude&nbsp; · &nbsp;Ollama&nbsp; · &nbsp;LM Studio&nbsp; · &nbsp;Shodan</sub>
 
+<br><br>
+
+![CLI](https://img.shields.io/badge/CLI-39FF41?style=flat-square&labelColor=04150a&logoColor=39FF41)
+![HTTP API](https://img.shields.io/badge/HTTP_API-REST_+_WebSocket-39FF41?style=flat-square&labelColor=04150a)
+![MCP](https://img.shields.io/badge/MCP-server_+_client-39FF41?style=flat-square&labelColor=04150a)
+![Dashboard](https://img.shields.io/badge/dashboard-+_metrics-39FF41?style=flat-square&labelColor=04150a)
+![Deploy](https://img.shields.io/badge/deploy-Docker_+_Caddy_TLS-39FF41?style=flat-square&labelColor=04150a)
+![RBAC](https://img.shields.io/badge/multi--engagement-RBAC-39FF41?style=flat-square&labelColor=04150a)
+
 </div>
 
 ---
@@ -51,19 +60,35 @@ spaf agent target.com         # the AI plans → runs → reports, end to end
 
 ## ◇ How it works
 
-One target in, a written assessment out. The agent plans the steps, scope-gates
-anything active, runs the modules on your machine, then lets the AI write it up.
+One target in, a written assessment out. Reach SPAF from any **surface** — the
+CLI, the HTTP API, the web dashboard, or an MCP host — and they all drive the
+**same engine**: every active step is scope-gated and audit-logged, runs the
+modules on your machine, and the AI writes it up.
 
 ```mermaid
 %%{init: {'theme':'base','themeVariables':{'fontFamily':'JetBrains Mono, ui-monospace, monospace','primaryColor':'#04150a','primaryTextColor':'#39FF41','primaryBorderColor':'#2ea043','lineColor':'#2ea043','clusterBkg':'#0d1117','clusterBorder':'#1f6f33'}}}%%
 flowchart TD
-  T([ target ]):::hot --> A{{ AI plans the assessment }}:::hot
-  A --> SC[/ scope check /]:::dim
+  subgraph SURF [ surfaces ]
+    direction LR
+    CLI[spaf CLI]:::box
+    API[HTTP API<br/>REST · WebSocket]:::box
+    DASH[web dashboard<br/>+ /metrics]:::box
+    MCP[MCP server<br/>Claude Desktop]:::box
+  end
 
-  SC --> R[recon<br/>subdomains · DNS · WHOIS]:::box
-  SC --> TK
-  SC --> W[web audit<br/>headers · TLS · paths]:::box
-  SC --> N[network<br/>nmap · CVE mapping]:::box
+  CLI --> SVC
+  API --> SVC
+  DASH --> API
+  MCP --> SVC
+
+  SVC{{ service engine }}:::hot
+  SVC --> GATE[/ scope check · RBAC · audit /]:::dim
+  GATE --> A{{ AI plans the assessment }}:::hot
+
+  A --> R[recon<br/>subdomains · DNS · WHOIS]:::box
+  A --> TK
+  A --> W[web audit<br/>headers · TLS · paths]:::box
+  A --> N[network<br/>nmap · CVE mapping]:::box
 
   subgraph TK [recon toolkit]
     direction LR
@@ -76,7 +101,7 @@ flowchart TD
   N --> F
 
   F --> DB[( MongoDB / SQLite )]:::dim
-  F --> AI[[ AI assessment ]]:::hot
+  F --> AI[[ AI assessment<br/>router · cache · budget ]]:::hot
   AI --> REP[report<br/>HTML · JSON · CSV]:::hot
 
   classDef hot fill:#04150a,stroke:#39FF41,color:#39FF41,stroke-width:1px;
@@ -84,7 +109,7 @@ flowchart TD
   classDef dim fill:#0d1117,stroke:#1f6f33,color:#5CE47A;
 ```
 
-<sub>Run the whole chain with <code>spaf agent target.com</code>, or any single stage on its own (<code>spaf recon</code>, <code>spaf toolkit</code>, <code>spaf scan</code>, …).</sub>
+<sub>Run the whole chain with <code>spaf agent target.com</code>, any single stage on its own (<code>spaf recon</code>, <code>spaf toolkit</code>, <code>spaf scan</code>, …), or the same over the API / dashboard / MCP — all scope-gated and audit-logged through one engine.</sub>
 
 ---
 

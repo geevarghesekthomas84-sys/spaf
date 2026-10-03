@@ -3,6 +3,21 @@
 All notable changes to SPAF are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.14.0]
+
+### Added
+- **Staged pipeline (`spaf/pipeline/`)** — an explicit, ordered workflow:
+  **discovery → validation → remediation → report**, with strict hand-offs so a
+  stage receives only the previous stage's typed `StageResult` and cannot reach
+  into another stage's internals. Each stage runs a fixed set of modules
+  (discovery: recon/toolkit/crawl; validation: webscan/scan) through
+  `run_module`, so scope, RBAC, audit, rate limiting, and mock mode all apply.
+  Remediation enriches the consolidated findings with fix guidance (no target
+  contact, inputs never mutated); report renders a JSON deliverable.
+  - CLI: `spaf pipeline <target>` (`--mock`, `--report-dir`, `--no-db`).
+  - API: `POST /pipeline` (async job, operator role, scope-gated).
+  - `StageResult` / `PipelineResult` added to the JSON-Schema export.
+
 ## [1.13.0]
 
 ### Added

@@ -20,6 +20,7 @@ from spaf.service.models import (
     AgentPlanStep, AgentResult, Finding, ScanResult, ScanSummary,
     ScopeState, ToolStatus,
 )
+from spaf.pipeline.models import PipelineResult, StageResult
 
 # The public, documented result models (inputs are validated separately).
 SCHEMA_MODELS = {
@@ -30,6 +31,8 @@ SCHEMA_MODELS = {
     "ScanSummary": ScanSummary,
     "ToolStatus": ToolStatus,
     "ScopeState": ScopeState,
+    "StageResult": StageResult,
+    "PipelineResult": PipelineResult,
 }
 
 

@@ -284,6 +284,20 @@ class SpafService:
         return result
 
     # ------------------------------------------------------------------
+    # Staged pipeline
+    # ------------------------------------------------------------------
+    async def run_pipeline(self, target: str, options: Optional[Dict[str, Any]] = None, *,
+                           stages: Optional[List[Any]] = None,
+                           report_dir: Optional[str] = None,
+                           bus: Optional[EventBus] = None, surface: str = "pipeline"):
+        """Run discovery → validation → remediation → report through the staged
+        pipeline. Each module step is still scope-gated and audited via run_module."""
+        from spaf.pipeline import Pipeline
+        return await Pipeline(self, bus=bus, surface=surface).run(
+            target, options, stages=stages, report_dir=report_dir
+        )
+
+    # ------------------------------------------------------------------
     # Reads
     # ------------------------------------------------------------------
     async def list_scans(self, target: Optional[str] = None, limit: int = 20) -> List[ScanSummary]:

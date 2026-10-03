@@ -1250,6 +1250,43 @@ def engagements(
 
 
 @app.command()
+def pipeline(
+    target: str          = typer.Argument(..., help="Target domain, IP, or URL"),
+    scope_file: str      = typer.Option("scope.json", "--scope-file", help="Engagement scope file"),
+    report_dir: str      = typer.Option("./reports", "--report-dir", help="Where to write the report"),
+    no_db: bool          = typer.Option(False, "--no-db", help="Run without database logging"),
+    mock: bool           = typer.Option(False, "--mock", help="Dry-run: synthetic findings, no target contacted"),
+):
+    """Staged assessment: discovery → validation → remediation → report."""
+    from spaf.service import SpafService
+    from spaf.utils import ui
+
+    print_banner()
+
+    async def run():
+        svc = SpafService(scope_file=scope_file)
+        opts = {"no_db": no_db, "mock": mock}
+        res = await svc.run_pipeline(target, opts, report_dir=report_dir, surface="cli")
+
+        table = ui.table(f"Pipeline · {target}")
+        table.add_column("Stage", style=ui.AMBER)
+        table.add_column("Status")
+        table.add_column("Summary", overflow="fold")
+        for s in res.stages:
+            color = ui.OK if s.status == "completed" else ui.DANGER
+            table.add_row(s.stage.value, f"[{color}]{s.status}[/]", s.summary or "—")
+        console.print(table)
+
+        parts = [f"[{ui.SEVERITY.get(k, 'default')}]{k} {v}[/]"
+                 for k, v in res.counts.items() if v]
+        console.print(f"\n[bold]{len(res.findings)}[/bold] finding(s)   " + "  ".join(parts))
+        if res.report_path:
+            console.print(f"[{ui.OK}]report:[/] {res.report_path}")
+
+    asyncio.run(run())
+
+
+@app.command()
 def schema(
     write: Optional[str] = typer.Option(None, "--write", help="Write schema files to this directory"),
     model: Optional[str] = typer.Option(None, "--model", help="Print only this model's schema (e.g. Finding)"),

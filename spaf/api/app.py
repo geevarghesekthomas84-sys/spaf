@@ -81,6 +81,19 @@ class AgentRequest(BaseModel):
         return v
 
 
+class PipelineRequest(BaseModel):
+    target: str
+    options: Dict[str, Any] = Field(default_factory=dict)
+
+    @field_validator("target")
+    @classmethod
+    def _target_ok(cls, v: str) -> str:
+        ok, reason = _v.validate_scan_target(v)
+        if not ok:
+            raise ValueError(reason)
+        return v.strip()
+
+
 class ScopeAddRequest(BaseModel):
     value: str
 
@@ -268,6 +281,27 @@ def create_app(scope_file: str = "scope.json") -> FastAPI:
             return payload
 
         job = jobs.start("agent", req.target, run)
+        return {"job_id": job.id, "status": job.status}
+
+    @app.post("/pipeline", status_code=202)
+    async def start_pipeline(req: PipelineRequest, eng=Depends(get_engagement),
+                            principal=Depends(get_principal)):
+        require(principal, Role.OPERATOR)
+        require_active_authorization(eng)
+        svc = service_for(principal, eng)
+        _ensure_in_scope(svc, req.target)
+        metrics.inc("spaf_scans_started_total", {"module": "pipeline"})
+
+        async def run(bus: EventBus):
+            r = await svc.run_pipeline(req.target, req.options, bus=bus, surface="api")
+            payload = r.model_dump(mode="json")
+            for sev, n in (payload.get("counts") or {}).items():
+                if n:
+                    metrics.inc("spaf_findings_total", {"severity": sev}, n)
+            metrics.inc("spaf_scans_completed_total", {"module": "pipeline"})
+            return payload
+
+        job = jobs.start("pipeline", req.target, run)
         return {"job_id": job.id, "status": job.status}
 
     @app.get("/jobs/{job_id}")

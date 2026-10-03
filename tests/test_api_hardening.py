@@ -53,6 +53,23 @@ def test_mock_mode_scan_touches_nothing(client):
     assert len(f) == 1 and f[0]["vuln_type"] == "mock_scan_finding"
 
 
+def test_pipeline_endpoint_mock(client):
+    r = client.post("/pipeline", json={"target": "example.com",
+                                        "options": {"mock": True, "no_db": True}}, headers=H)
+    assert r.status_code == 202
+    jid = r.json()["job_id"]
+    result = None
+    for _ in range(40):
+        j = client.get(f"/jobs/{jid}", headers=H).json()
+        if j["status"] != "running":
+            result = j
+            break
+        time.sleep(0.05)
+    assert result and result["status"] == "completed"
+    stages = [s["stage"] for s in result["result"]["stages"]]
+    assert stages == ["discovery", "validation", "remediation", "report"]
+
+
 def test_rate_limit_returns_429(tmp_path, monkeypatch):
     monkeypatch.setenv("SPAF_API_KEY", KEY)
     monkeypatch.setenv("SPAF_RATE_LIMIT", "3")

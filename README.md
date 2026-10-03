@@ -112,7 +112,7 @@ flowchart TD
   classDef dim fill:#11161a,stroke:#2b3a2f,color:#9AA6B2;
 ```
 
-<sub>Run the whole chain with <code>spaf agent target.com</code>, any single stage on its own (<code>spaf recon</code>, <code>spaf toolkit</code>, <code>spaf scan</code>, …), or the same over the API / dashboard / MCP — all scope-gated and audit-logged through one engine.</sub>
+<sub>Run the whole chain with <code>spaf agent target.com</code> (AI-planned) or <code>spaf pipeline target.com</code> (deterministic <b>discovery → validation → remediation → report</b>), any single stage on its own (<code>spaf recon</code>, <code>spaf toolkit</code>, <code>spaf scan</code>, …), or the same over the API / dashboard / MCP — all scope-gated and audit-logged through one engine.</sub>
 
 ---
 
@@ -782,6 +782,7 @@ spaf/
 │   ├── cli/          # Typer CLI — all commands
 │   ├── core/         # Async engine & BaseModule
 │   ├── agent/        # autonomous AI orchestrator (spaf agent)
+│   ├── pipeline/     # staged workflow: discovery→validation→remediation→report
 │   ├── orchestration/# model router, response cache, run budgets
 │   ├── modules/      # recon, network, webscan, crawler, toolkit
 │   ├── service/      # UI-free facade (scope, audit, events) shared by API/MCP

@@ -14,8 +14,9 @@ runs **modules**, which produce one typed **result contract**.
                        │   (thin adapters — no business logic)
  engine          spaf/service (SpafService)  ·  spaf/core (ScanEngine)
                        │   scope · RBAC · audit · events · mock
- intelligence    spaf/agent · spaf/orchestration · spaf/utils/ai
+ intelligence    spaf/agent · spaf/pipeline · spaf/orchestration · spaf/utils/ai
                        │   plan → route → cache → budget → fallback
+                       │   (pipeline = deterministic staged flow)
  modules         spaf/modules/*  (recon · network · webscan · crawler · toolkit)
                        │   + spaf/plugins (third-party modules)
  contract        spaf/service/models.py  →  spaf/service/schema.py (JSON Schema)
@@ -47,6 +48,15 @@ The **agent** (`spaf/agent`) sits above this: it asks the orchestrator to *plan*
 an ordered list of module steps from a fixed, safe action set, then executes each
 step through the same `run_module` path — so planning is the only AI-driven part;
 execution is deterministic and governed.
+
+The **staged pipeline** (`spaf/pipeline`) is the deterministic counterpart to the
+agent: a fixed, ordered workflow — **discovery → validation → remediation →
+report** — with strict hand-offs. Each stage receives only the previous stage's
+typed `StageResult` (never another stage's internals), runs a fixed module set
+through `run_module`, and the runner consolidates findings; remediation enriches
+them with fix guidance without touching the target, and report renders the
+deliverable. `SpafService.run_pipeline`, `spaf pipeline`, and `POST /pipeline`
+all drive it.
 
 ## 3. The result contract
 

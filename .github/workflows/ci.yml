@@ -73,9 +73,10 @@ jobs:
           required = {
               "spaf", "spaf/cli", "spaf/core", "spaf/database",
               "spaf/modules", "spaf/reports", "spaf/utils",
-              # platform packages (1.6 → 1.11)
+              # platform packages (1.6 → 1.14)
               "spaf/agent", "spaf/service", "spaf/api", "spaf/mcp",
               "spaf/orchestration", "spaf/plugins", "spaf/workspaces",
+              "spaf/pipeline",
           }
           missing = required - pkgs
           if missing:

@@ -15,8 +15,9 @@ independently shippable and leaves `main` green.
 
 **Status:** ✅ Phase 0 (service layer) · ✅ Phase 1 (HTTP API) ·
 ✅ Phase 2 minimal (MCP server, stdio) · ✅ Phase 3 (AI orchestration) ·
-✅ Phase 5 (secure gateway + hardened deploy + image scanning) — shipped.
-Next: Phase 4 (MCP client + plugin SDK) or Phase 6 (observability + dashboard).
+✅ Phase 5 (secure gateway + hardened deploy) · ✅ Phase 4 (MCP client + plugin
+SDK) — shipped. Next: Phase 6 (observability + web dashboard) or Phase 7
+(multi-engagement + RBAC).
 
 ---
 

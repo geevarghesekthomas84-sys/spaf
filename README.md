@@ -478,6 +478,34 @@ curl -k https://localhost/health
 
 ---
 
+## ◇ Extend it <sup>new in 1.9</sup>
+
+**Plugins** — add your own scan module by subclassing `PluginModule` and
+advertising it via the `spaf.modules` entry-point group:
+
+```toml
+# your plugin's pyproject.toml
+[project.entry-points."spaf.modules"]
+myscan = "my_pkg.module:MyScanModule"
+```
+
+```bash
+spaf plugins            # list discovered plugins
+spaf myscan target.com  # runs like a built-in (CLI / API / MCP)
+```
+
+**Consume external MCP servers** — point SPAF at other MCP servers (CVE/OSINT
+feeds, your own tools) in Claude-Desktop shape (`mcp_servers.json`):
+
+```bash
+spaf mcp-tools          # list tools exposed by the configured servers
+```
+
+> Plugins and external MCP tools run through the CLI/API/service — they are not
+> auto-added to the autonomous agent's fixed action set (that stays curated).
+
+---
+
 ## ◇ AI providers
 
 > **Model routing, caching & budgets** (1.7+): the agent routes each task to a

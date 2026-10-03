@@ -3,6 +3,18 @@
 All notable changes to SPAF are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.9.0]
+
+### Added
+- **MCP client (`spaf/mcp/client.py`, `spaf mcp-tools`)** — SPAF can now *consume*
+  external MCP servers. Configure them in Claude-Desktop shape
+  (`mcp_servers.json` / `SPAF_MCP_SERVERS`) and list/call their tools.
+- **Plugin SDK (`spaf/plugins/`, `spaf plugins`)** — third parties add scan
+  modules by subclassing `PluginModule` and advertising them via the
+  `spaf.modules` entry-point group (or the `@spaf_module` decorator). Registered
+  modules run through the CLI/service/API/MCP; they are deliberately **not**
+  added to the autonomous agent's fixed action set.
+
 ## [1.8.0]
 
 ### Added

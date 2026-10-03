@@ -97,13 +97,24 @@ class SpafService:
     # ------------------------------------------------------------------
     # Module execution (headless)
     # ------------------------------------------------------------------
+    def _resolve_module(self, module: str):
+        """Built-in module, else a registered plugin module."""
+        module = module.strip().lower()
+        if module in MODULE_MAP:
+            return MODULE_MAP[module]
+        from spaf import plugins
+        cls = plugins.get_module(module)
+        if cls is None:
+            valid = list(MODULE_MAP) + list(plugins.registered_modules())
+            raise ValueError(f"unknown module '{module}'. Valid: {', '.join(sorted(set(valid)))}")
+        return cls
+
     async def run_module(self, module: str, target: str,
                          options: Optional[Dict[str, Any]] = None,
                          *, bus: Optional[EventBus] = None,
                          surface: str = "service") -> ScanResult:
         module = module.strip().lower()
-        if module not in MODULE_MAP:
-            raise ValueError(f"unknown module '{module}'. Valid: {', '.join(MODULE_MAP)}")
+        mod_cls = self._resolve_module(module)
 
         options = dict(options or {})
         self._check_scope(target, surface)
@@ -122,7 +133,7 @@ class SpafService:
 
         result = ScanResult(scan_id=scan_id, module=module, target=target, started_at=started)
         try:
-            instance = MODULE_MAP[module](target, options, scan_id)
+            instance = mod_cls(target, options, scan_id)
             progress = Progress(disable=True)  # satisfies module.run(progress), renders nothing
             if bus:
                 bus.publish(Event("step_started", target=target, module=module))

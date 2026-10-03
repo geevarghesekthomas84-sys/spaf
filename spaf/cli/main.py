@@ -1156,6 +1156,58 @@ def mcp(
     run_mcp(scope_file=scope_file)
 
 
+@app.command(name="mcp-tools")
+def mcp_tools(
+    config: str = typer.Option("mcp_servers.json", "--config", help="External MCP servers config (Claude-Desktop shape)"),
+    server: Optional[str] = typer.Option(None, "--server", help="Only this server"),
+):
+    """List tools from external MCP servers SPAF is configured to consume."""
+    from spaf.utils import ui
+    try:
+        from spaf.mcp.client import MCPClientManager
+    except ModuleNotFoundError:
+        console.print("[bold red]MCP support not installed.[/bold red] [dim]pip install \"spaf[mcp]\"[/dim]")
+        raise typer.Exit(1)
+
+    mgr = MCPClientManager(config_path=config)
+    if not mgr.names():
+        console.print(f"[{ui.FAINT}]No external MCP servers configured in {config}.[/]")
+        console.print(f"[{ui.FAINT}]Add them in Claude-Desktop shape: "
+                      '{"mcpServers": {"name": {"command": "...", "args": ["..."]}}}[/]')
+        return
+
+    async def run():
+        data = await (mgr.list_tools(server) if server else mgr.list_all_tools())
+        servers = {server: data} if server else data
+        for name, tools in servers.items():
+            table = ui.table(f"MCP · {name}")
+            table.add_column("Tool", style=ui.AMBER)
+            table.add_column("Description", style="default", overflow="fold")
+            for t in tools:
+                table.add_row(t["name"], (t.get("description") or "")[:100])
+            console.print(table)
+
+    asyncio.run(run())
+
+
+@app.command()
+def plugins():
+    """List SPAF scan-module plugins discovered via entry points or registration."""
+    from spaf.utils import ui
+    from spaf import plugins as plug
+    mods = plug.registered_modules()
+    if not mods:
+        console.print(f"[{ui.FAINT}]No plugins registered.[/] "
+                      f"[dim]Advertise a BaseModule under the 'spaf.modules' entry-point group.[/dim]")
+        return
+    table = ui.table("Plugins")
+    table.add_column("Module", style=ui.AMBER)
+    table.add_column("Class", style="default")
+    for name, cls in sorted(mods.items()):
+        table.add_row(name, f"{cls.__module__}.{cls.__name__}")
+    console.print(table)
+
+
 @app.command()
 def report(
     target: Optional[str] = typer.Argument(None, help="Target to generate report for"),

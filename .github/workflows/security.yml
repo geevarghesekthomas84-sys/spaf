@@ -1,0 +1,43 @@
+name: Security
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  schedule:
+    - cron: "0 6 * * 1"   # weekly
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deps-and-fs:
+    name: Dependency & filesystem scan (Trivy)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Trivy filesystem scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scanners: vuln,secret,misconfig
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "0"   # report only; don't fail the build on advisories yet
+
+  image:
+    name: Build & scan API image (Trivy)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build API image
+        run: docker build -f deploy/Dockerfile -t spaf-api:scan .
+      - name: Trivy image scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: image
+          image-ref: spaf-api:scan
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "0"

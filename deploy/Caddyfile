@@ -1,0 +1,58 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# SPAF gateway — Caddy reverse proxy in front of the API.
+# TLS (automatic for a real domain, internal self-signed for localhost),
+# security headers, and a single upstream. mTLS and rate-limiting are opt-in
+# (see the commented blocks). SPAF_DOMAIN / SPAF_ACME_EMAIL come from the env.
+# ─────────────────────────────────────────────────────────────────────────────
+
+{
+	# ACME account email for Let's Encrypt (required for a public domain).
+	email {$SPAF_ACME_EMAIL}
+	# Don't leak the server banner.
+	servers {
+		trusted_proxies static private_ranges
+	}
+}
+
+{$SPAF_DOMAIN:localhost} {
+	encode gzip zstd
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options    "nosniff"
+		X-Frame-Options           "DENY"
+		Referrer-Policy           "no-referrer"
+		Cross-Origin-Opener-Policy "same-origin"
+		-Server
+	}
+
+	# Cap request bodies to blunt abuse.
+	request_body {
+		max_size 2MB
+	}
+
+	# ── mTLS (opt-in) ──────────────────────────────────────────────────────────
+	# Require a client certificate signed by your engagement CA. Mount the CA at
+	# /certs/ca.pem and uncomment:
+	# tls {
+	#     client_auth {
+	#         mode                 require_and_verify
+	#         trusted_ca_cert_file /certs/ca.pem
+	#     }
+	# }
+
+	# ── Rate limiting (opt-in) ─────────────────────────────────────────────────
+	# Requires a Caddy build with the caddy-ratelimit plugin, then uncomment:
+	# rate_limit {
+	#     zone spaf_api {
+	#         key    {remote_host}
+	#         events 120
+	#         window 1m
+	#     }
+	# }
+
+	reverse_proxy api:8000 {
+		health_uri    /health
+		health_interval 15s
+	}
+}

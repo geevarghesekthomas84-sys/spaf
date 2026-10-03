@@ -14,9 +14,9 @@ This is a plan, not a commitment to build it all at once. Each phase is
 independently shippable and leaves `main` green.
 
 **Status:** ✅ Phase 0 (service layer) · ✅ Phase 1 (HTTP API) ·
-✅ Phase 2 minimal (MCP server, stdio) · ✅ Phase 3 (AI orchestration: router,
-cache, budget, fallback) — shipped. Next: Phase 5 (secure gateway) or Phase 4
-(MCP client + plugin SDK).
+✅ Phase 2 minimal (MCP server, stdio) · ✅ Phase 3 (AI orchestration) ·
+✅ Phase 5 (secure gateway + hardened deploy + image scanning) — shipped.
+Next: Phase 4 (MCP client + plugin SDK) or Phase 6 (observability + dashboard).
 
 ---
 

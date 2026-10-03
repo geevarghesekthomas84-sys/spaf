@@ -26,3 +26,8 @@ Thumbs.db
 # IDEs
 .vscode/
 .idea/
+
+# Deploy secrets (commit only .env.enc)
+deploy/certs/
+*.age
+age.key

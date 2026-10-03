@@ -3,6 +3,23 @@
 All notable changes to SPAF are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.8.0]
+
+### Added
+- **Secure deployment stack (`deploy/`)** — a hardened way to run the API:
+  - **Caddy gateway** fronting the API with automatic TLS, security headers
+    (HSTS, nosniff, DENY, no-referrer), a request-body cap, and opt-in blocks
+    for **mTLS** and rate-limiting.
+  - **Hardened API image** (`deploy/Dockerfile`): multi-stage wheel build,
+    **non-root** user, **read-only** root FS with state confined to `/data`,
+    `cap_drop: ALL`, `no-new-privileges`, resource limits, healthcheck.
+  - **docker-compose** stack (gateway + API, optional Mongo via `--profile mongo`);
+    only the gateway is network-exposed.
+  - **`SECURITY_HARDENING.md`** — mTLS, rate-limiting, sops+age secrets, an
+    authorized-egress note, and a pre-exposure checklist.
+- **CI security scanning** (`.github/workflows/security.yml`) — Trivy over the
+  filesystem (deps/secrets/misconfig) and the built API image, weekly + on PRs.
+
 ## [1.7.0]
 
 ### Added

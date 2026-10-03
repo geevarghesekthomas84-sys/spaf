@@ -1,0 +1,79 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# SPAF hardened stack: Caddy gateway (TLS/headers) → SPAF API → optional Mongo.
+#
+#   cd deploy && cp .env.example .env   # set SPAF_API_KEYS (and SPAF_DOMAIN)
+#   docker compose up -d --build        # gateway + api (SQLite, zero-setup)
+#   docker compose --profile mongo up -d --build   # add MongoDB
+#
+# Only the gateway is exposed to the network; the API listens on an internal
+# network and is reached only through Caddy.
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+  gateway:
+    image: caddy:2-alpine
+    depends_on:
+      - api
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - SPAF_DOMAIN=${SPAF_DOMAIN:-localhost}
+      - SPAF_ACME_EMAIL=${SPAF_ACME_EMAIL:-}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+      # - ./certs:/certs:ro            # mount your mTLS CA here if enabling mTLS
+    restart: unless-stopped
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE]
+    security_opt:
+      - no-new-privileges:true
+
+  api:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: spaf-api:local
+    environment:
+      - SPAF_API_KEYS=${SPAF_API_KEYS:?set SPAF_API_KEYS in .env}
+      - SPAF_DB_BACKEND=${SPAF_DB_BACKEND:-sqlite}
+      - SPAF_MONGO_URI=${SPAF_MONGO_URI:-mongodb://mongo:27017}
+      - AI_PROVIDER=${AI_PROVIDER:-google}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+    expose:
+      - "8000"
+    volumes:
+      - spaf_data:/data
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 1g
+
+  mongo:
+    image: mongo:7
+    profiles: ["mongo"]
+    volumes:
+      - mongo_data:/data/db
+    expose:
+      - "27017"
+    restart: unless-stopped
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  caddy_data:
+  caddy_config:
+  spaf_data:
+  mongo_data:

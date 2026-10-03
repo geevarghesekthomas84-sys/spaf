@@ -456,6 +456,28 @@ curl -s -XPOST localhost:8000/scans -H "X-API-Key: $KEY" \
 
 ---
 
+## ◇ Secure deploy <sup>new in 1.8</sup>
+
+Run the API hardened, behind a TLS reverse-proxy gateway — one command.
+
+```bash
+cd deploy
+cp .env.example .env            # set SPAF_API_KEYS (and SPAF_DOMAIN for real TLS)
+docker compose up -d --build    # Caddy gateway + API (SQLite, zero-setup)
+curl -k https://localhost/health
+```
+
+- **Caddy gateway** — automatic TLS, security headers, request-size cap; opt-in
+  **mTLS** and rate-limiting. Only the gateway is exposed; the API is internal.
+- **Hardened API container** — non-root, read-only root FS (state under `/data`),
+  `cap_drop: ALL`, `no-new-privileges`, resource limits, healthcheck.
+- **CI image scanning** (Trivy) + **sops/age** secrets.
+
+> Full guide — mTLS, rate-limiting, secrets, and the authorized-egress note —
+> in [`SECURITY_HARDENING.md`](SECURITY_HARDENING.md).
+
+---
+
 ## ◇ AI providers
 
 > **Model routing, caching & budgets** (1.7+): the agent routes each task to a

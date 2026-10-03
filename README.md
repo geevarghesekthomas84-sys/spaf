@@ -1,35 +1,33 @@
-<!-- HERO: hosted animated SVGs (GitHub proxies them; they animate in-browser).
-     The name + feature ticker live in the typing SVG, which renders text
-     reliably — capsule-render collapses whitespace in its desc field. -->
+<!-- HERO: hand-crafted amber/steel terminal-card banner (assets/hero.svg,
+     matches the CLI + dashboard design system) + a hosted typing ticker. -->
 <div align="center">
 
-<img alt="SPAF" width="100%"
-     src="https://capsule-render.vercel.app/api?type=waving&height=190&color=0:0b3d16,50:08361a,100:020806&text=SPAF&fontSize=96&fontColor=39FF41&fontAlignY=38&animation=fadeIn" />
+<img alt="SPAF — Smart Pentesting Automation Framework" width="100%" src="assets/hero.svg" />
 
 <a href="https://github.com/geevarghesekthomas84-sys/spaf">
-  <img alt="Smart Pentesting Automation Framework · AI plans → runs → reports"
-       src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&weight=700&size=22&pause=1000&color=39FF41&center=true&vCenter=true&width=780&height=50&lines=Smart+Pentesting+Automation+Framework;%24+spaf+agent+target.com;AI+plans+%E2%86%92+runs+%E2%86%92+reports;recon+%C2%B7+web+%C2%B7+network+%C2%B7+nuclei+%C2%B7+crawler;CLI+%C2%B7+API+%C2%B7+MCP+%C2%B7+dashboard+%C2%B7+RBAC" />
+  <img alt="AI plans → runs → reports"
+       src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&weight=700&size=21&pause=1000&color=E0A82E&center=true&vCenter=true&width=780&height=44&lines=%24+spaf+agent+target.com;the+AI+plans+%E2%86%92+runs+the+tools+%E2%86%92+writes+it+up;recon+%C2%B7+web+%C2%B7+network+%C2%B7+nuclei+%C2%B7+crawler;drive+it+from+CLI+%C2%B7+API+%C2%B7+MCP+%C2%B7+dashboard" />
 </a>
 
 <p><b>AI-orchestrated offensive security</b> — one target in, a written assessment out.<br>
 <sub>Built for Kali, bug bounty, and red-team work · <b>authorized testing only</b></sub></p>
 
 <p>
-  <a href="CHANGELOG.md"><img alt="version" src="https://img.shields.io/badge/version-1.11.0-39FF41?style=flat-square&labelColor=020806"></a>
-  <a href="https://github.com/geevarghesekthomas84-sys/spaf/actions/workflows/ci.yml"><img alt="ci" src="https://img.shields.io/github/actions/workflow/status/geevarghesekthomas84-sys/spaf/ci.yml?branch=master&style=flat-square&label=ci&labelColor=020806&color=39FF41"></a>
-  <a href="https://python.org"><img alt="python" src="https://img.shields.io/badge/python-3.11+-39FF41?style=flat-square&labelColor=020806&logo=python&logoColor=39FF41"></a>
-  <a href="LICENSE"><img alt="license" src="https://img.shields.io/badge/license-MIT-8CF5A0?style=flat-square&labelColor=020806"></a>
-  <a href="https://github.com/geevarghesekthomas84-sys/spaf/stargazers"><img alt="stars" src="https://img.shields.io/github/stars/geevarghesekthomas84-sys/spaf?style=flat-square&labelColor=020806&color=39FF41"></a>
+  <a href="CHANGELOG.md"><img alt="version" src="https://img.shields.io/badge/version-1.11.0-E0A82E?style=flat-square&labelColor=0a0e12"></a>
+  <a href="https://github.com/geevarghesekthomas84-sys/spaf/actions/workflows/ci.yml"><img alt="ci" src="https://img.shields.io/github/actions/workflow/status/geevarghesekthomas84-sys/spaf/ci.yml?branch=master&style=flat-square&label=ci&labelColor=0a0e12&color=E0A82E"></a>
+  <a href="https://python.org"><img alt="python" src="https://img.shields.io/badge/python-3.11+-E0A82E?style=flat-square&labelColor=0a0e12&logo=python&logoColor=E0A82E"></a>
+  <a href="LICENSE"><img alt="license" src="https://img.shields.io/badge/license-MIT-9AA6B2?style=flat-square&labelColor=0a0e12"></a>
+  <a href="https://github.com/geevarghesekthomas84-sys/spaf/stargazers"><img alt="stars" src="https://img.shields.io/github/stars/geevarghesekthomas84-sys/spaf?style=flat-square&labelColor=0a0e12&color=E0A82E"></a>
 </p>
 
 <p>
-  <img alt="CLI" src="https://img.shields.io/badge/CLI-1f6f33?style=flat-square&labelColor=020806">
-  <img alt="HTTP API" src="https://img.shields.io/badge/HTTP_API-1f6f33?style=flat-square&labelColor=020806&logo=fastapi&logoColor=8CF5A0">
-  <img alt="MCP" src="https://img.shields.io/badge/MCP-1f6f33?style=flat-square&labelColor=020806&logo=anthropic&logoColor=8CF5A0">
-  <img alt="Dashboard" src="https://img.shields.io/badge/Dashboard-1f6f33?style=flat-square&labelColor=020806">
-  <img alt="Metrics" src="https://img.shields.io/badge/Metrics-1f6f33?style=flat-square&labelColor=020806&logo=prometheus&logoColor=8CF5A0">
-  <img alt="Deploy" src="https://img.shields.io/badge/Docker_+_Caddy-1f6f33?style=flat-square&labelColor=020806&logo=docker&logoColor=8CF5A0">
-  <img alt="RBAC" src="https://img.shields.io/badge/multi--engagement_RBAC-1f6f33?style=flat-square&labelColor=020806">
+  <img alt="CLI" src="https://img.shields.io/badge/CLI-11161a?style=flat-square&labelColor=0a0e12">
+  <img alt="HTTP API" src="https://img.shields.io/badge/HTTP_API-11161a?style=flat-square&labelColor=0a0e12&logo=fastapi&logoColor=E0A82E">
+  <img alt="MCP" src="https://img.shields.io/badge/MCP-11161a?style=flat-square&labelColor=0a0e12&logo=anthropic&logoColor=E0A82E">
+  <img alt="Dashboard" src="https://img.shields.io/badge/Dashboard-11161a?style=flat-square&labelColor=0a0e12">
+  <img alt="Metrics" src="https://img.shields.io/badge/Metrics-11161a?style=flat-square&labelColor=0a0e12&logo=prometheus&logoColor=E0A82E">
+  <img alt="Deploy" src="https://img.shields.io/badge/Docker_+_Caddy-11161a?style=flat-square&labelColor=0a0e12&logo=docker&logoColor=E0A82E">
+  <img alt="RBAC" src="https://img.shields.io/badge/multi--engagement_RBAC-11161a?style=flat-square&labelColor=0a0e12">
 </p>
 
 <sub>AI engines&nbsp; · &nbsp;Google Gemini&nbsp; · &nbsp;Anthropic Claude&nbsp; · &nbsp;Ollama&nbsp; · &nbsp;LM Studio&nbsp; · &nbsp;Shodan</sub>
@@ -71,7 +69,7 @@ CLI, the HTTP API, the web dashboard, or an MCP host — and they all drive the
 modules on your machine, and the AI writes it up.
 
 ```mermaid
-%%{init: {'theme':'base','themeVariables':{'fontFamily':'JetBrains Mono, ui-monospace, monospace','primaryColor':'#04150a','primaryTextColor':'#39FF41','primaryBorderColor':'#2ea043','lineColor':'#2ea043','clusterBkg':'#0d1117','clusterBorder':'#1f6f33'}}}%%
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'JetBrains Mono, ui-monospace, monospace','primaryColor':'#11161a','primaryTextColor':'#E0A82E','primaryBorderColor':'#C98B1C','lineColor':'#5B6672','clusterBkg':'#0a0e12','clusterBorder':'#1c2630'}}}%%
 flowchart TD
   subgraph SURF [ surfaces ]
     direction LR
@@ -109,9 +107,9 @@ flowchart TD
   F --> AI[[ AI assessment<br/>router · cache · budget ]]:::hot
   AI --> REP[report<br/>HTML · JSON · CSV]:::hot
 
-  classDef hot fill:#04150a,stroke:#39FF41,color:#39FF41,stroke-width:1px;
-  classDef box fill:#0d1117,stroke:#2ea043,color:#8CF5A0;
-  classDef dim fill:#0d1117,stroke:#1f6f33,color:#5CE47A;
+  classDef hot fill:#0a0e12,stroke:#E0A82E,color:#E0A82E,stroke-width:1px;
+  classDef box fill:#11161a,stroke:#C98B1C,color:#C6D0DA;
+  classDef dim fill:#11161a,stroke:#2b3a2f,color:#9AA6B2;
 ```
 
 <sub>Run the whole chain with <code>spaf agent target.com</code>, any single stage on its own (<code>spaf recon</code>, <code>spaf toolkit</code>, <code>spaf scan</code>, …), or the same over the API / dashboard / MCP — all scope-gated and audit-logged through one engine.</sub>

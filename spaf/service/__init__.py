@@ -5,10 +5,10 @@ from spaf.service.models import (
     AgentPlanStep, AgentResult, Finding, ScanResult, ScanSummary,
     ScopeState, ToolStatus,
 )
-from spaf.service.service import SpafService, ScopeError, MODULE_MAP
+from spaf.service.service import SpafService, ScopeError, InputError, MODULE_MAP
 
 __all__ = [
-    "SpafService", "ScopeError", "MODULE_MAP",
+    "SpafService", "ScopeError", "InputError", "MODULE_MAP",
     "Event", "EventBus",
     "Finding", "ScanResult", "AgentPlanStep", "AgentResult",
     "ScanSummary", "ToolStatus", "ScopeState",

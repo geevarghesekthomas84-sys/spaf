@@ -21,14 +21,18 @@ from typing import Any, Dict, Optional
 
 from fastapi import Depends, FastAPI, Header, HTTPException, WebSocket, WebSocketDisconnect, status
 from fastapi.responses import HTMLResponse, PlainTextResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from spaf.service import SpafService, ScopeError, EventBus
 from spaf.service.audit import AUDIT_PATH
 from spaf.api.jobs import JobManager
 from spaf.api.metrics import Metrics
+from spaf.api.ratelimit import RateLimiter
+from spaf.utils import validator as _v
 from spaf.workspaces import EngagementManager, Role, authorization
 from spaf.workspaces.principals import load_registry
+
+_MODULE_NAME = __import__("re").compile(r"^[a-z][a-z0-9_-]{0,31}$")
 
 
 class ScanRequest(BaseModel):
@@ -36,12 +40,45 @@ class ScanRequest(BaseModel):
     target: str
     options: Dict[str, Any] = Field(default_factory=dict)
 
+    @field_validator("module")
+    @classmethod
+    def _module_ok(cls, v: str) -> str:
+        v = v.strip().lower()
+        if not _MODULE_NAME.match(v):
+            raise ValueError("invalid module name")
+        return v
+
+    @field_validator("target")
+    @classmethod
+    def _target_ok(cls, v: str) -> str:
+        ok, reason = _v.validate_scan_target(v)
+        if not ok:
+            raise ValueError(reason)
+        return v.strip()
+
 
 class AgentRequest(BaseModel):
     target: str
     goal: str = ""
     dry_run: bool = True
     aggressive: bool = False
+
+    @field_validator("target")
+    @classmethod
+    def _target_ok(cls, v: str) -> str:
+        # Dry-run planning doesn't touch the target, but we still reject the
+        # obviously-abusive wildcard/whole-internet inputs at the boundary.
+        if _v.is_overly_broad_target(v):
+            raise ValueError("target is overly broad")
+        return v.strip()
+
+    @field_validator("goal")
+    @classmethod
+    def _goal_ok(cls, v: str) -> str:
+        ok, reason = _v.validate_prompt_payload(v)
+        if not ok:
+            raise ValueError(reason)
+        return v
 
 
 class ScopeAddRequest(BaseModel):
@@ -66,6 +103,7 @@ def create_app(scope_file: str = "scope.json") -> FastAPI:
     metrics = Metrics()
     principals = load_registry()
     manager = EngagementManager()
+    limiter = RateLimiter()
     app.state.principals = principals  # used by the WebSocket handler
 
     # ── Identity, engagement & role dependencies ──────────────────────
@@ -75,6 +113,10 @@ def create_app(scope_file: str = "scope.json") -> FastAPI:
             metrics.inc("spaf_auth_failures_total")
             raise HTTPException(status.HTTP_401_UNAUTHORIZED,
                                 "Missing or invalid API key (send it in 'X-API-Key').")
+        if not limiter.allow(principal.key_id):
+            metrics.inc("spaf_rate_limited_total")
+            raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS,
+                                "Rate limit exceeded — slow down.")
         return principal
 
     def get_engagement(x_engagement: str = Header(default=""), principal=Depends(get_principal)):

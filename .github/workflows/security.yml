@@ -41,3 +41,25 @@ jobs:
           severity: CRITICAL,HIGH
           ignore-unfixed: true
           exit-code: "0"
+
+  supply-chain:
+    name: Dependency audit + SBOM
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install project + tooling
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[api,mcp]" pip-audit cyclonedx-bom
+      - name: Audit dependencies for known CVEs (report-only)
+        run: pip-audit --progress-spinner off || true
+      - name: Generate CycloneDX SBOM
+        run: cyclonedx-py environment --output-format json --output-file sbom.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: spaf-sbom
+          path: sbom.json

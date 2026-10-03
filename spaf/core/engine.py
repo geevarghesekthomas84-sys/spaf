@@ -1,3 +1,4 @@
+import os
 import aiohttp
 from typing import Any, Dict, Type, List
 from datetime import datetime
@@ -48,6 +49,17 @@ class ScanEngine:
              ("started", start_time.strftime("%Y-%m-%d %H:%M:%S UTC"))],
             title="Scan",
         ))
+
+        # ── Mock mode: run the pipeline without touching any target ────────
+        if options.get("mock") or os.getenv("SPAF_MOCK", "").strip().lower() in ("1", "true", "yes", "on"):
+            self.console.print(f"[{ui.AMBER}]● MOCK MODE[/] [dim]— no target contacted; synthetic results.[/dim]")
+            return [{
+                "target": target, "vuln_type": f"mock_{module_name}_finding",
+                "detail": f"[MOCK] synthetic {module_name} finding for {target}; no target was touched.",
+                "severity": "Info", "severity_order": 5,
+                "recommendation": "Mock mode — unset SPAF_MOCK / remove --mock to run for real.",
+                "scan_type": module_name, "discovered_at": start_time.isoformat(),
+            }]
 
         # ── Database ──────────────────────────────────────────────────────
         no_db   = options.get("no_db", False)

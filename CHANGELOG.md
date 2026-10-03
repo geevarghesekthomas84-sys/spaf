@@ -3,6 +3,34 @@
 All notable changes to SPAF are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.12.0]
+
+### Added — safety & hardening
+- **Mock mode** (`SPAF_MOCK=1`, `--mock`, or `options.mock`) — the full
+  discovery→findings pipeline runs with deterministic synthetic results and
+  **no target is contacted**. Safe for development, demos, and CI.
+- **Overly-broad-target rejection** (`spaf/utils/validator.py`) — wildcards
+  (`*`, `0.0.0.0/0`, `::/0`), bare TLDs, and CIDRs larger than `MAX_CIDR_HOSTS`
+  (/16) are refused at the input boundary, independent of engagement scope, to
+  prevent accidental or abusive mass scanning.
+- **Input hardening** — API `ScanRequest`/`AgentRequest` validate module names,
+  targets (via `validate_scan_target`), and cap free-text payloads
+  (`validate_prompt_payload`); malformed/overly-broad input → `422`.
+- **Rate limiting** (`spaf/api/ratelimit.py`) — per-principal token bucket
+  (`SPAF_RATE_LIMIT`/`SPAF_RATE_BURST`); excess requests → `429` and increment
+  `spaf_rate_limited_total`.
+- **Output/command safety** (`spaf/utils/safety.py`) — a destructive-command
+  denylist (`is_dangerous_command`, `assert_safe_argv`) as defence-in-depth over
+  the existing arg-list-only execution, and `sanitize_ai_text` to strip control
+  characters, cap length, and defang prompt-injection markers in generated text.
+- **Secret redaction in logs** (`spaf/utils/logger.py`) — a logging filter scrubs
+  API keys, tokens, `Authorization`/`Bearer`, and known key formats from every
+  log sink.
+- **Supply-chain CI** — `pip-audit` dependency CVE scan + a CycloneDX **SBOM**
+  artifact, alongside the existing Trivy scans.
+- **Threat model** — `docs/THREAT_MODEL.md`: assets, trust boundaries, the
+  controls above, explicit non-goals, and a per-workflow risk classification.
+
 ## [1.11.0]
 
 ### Added

@@ -716,6 +716,34 @@ spaf export target.com --format json --output /tmp/findings.json
 
 ---
 
+## ◇ Safety & hardening
+
+SPAF is **authorized-testing-only** tooling, built fail-safe. Layered controls:
+
+- **Scope enforcement** — out-of-scope targets are refused (fail-closed when a
+  scope is set); **signed authorizations** gate active runs.
+- **Overly-broad-scan rejection** — wildcards, `0.0.0.0/0`, and huge CIDRs are
+  refused at the input boundary, so you can't accidentally scan the internet.
+- **RBAC + rate limiting** — roles (viewer/operator/lead) and per-key limits
+  (`429`) over the API.
+- **No shell execution of untrusted text** — external tools run as argument
+  lists (never `shell=True`), guarded by a destructive-command denylist;
+  AI/target output is sanitized before it's logged, stored, or shown.
+- **Secret redaction** — API keys and tokens are scrubbed from every log sink.
+- **Supply chain** — Trivy + `pip-audit` + a CycloneDX SBOM in CI.
+
+```bash
+# Dry-run the pipeline without touching any target (synthetic findings):
+SPAF_MOCK=1 spaf webscan target.com        # any module / the agent honor it
+SPAF_MOCK=1 spaf agent target.com -y       # or over the API: options {"mock": true}
+```
+
+> Full detail — assets, trust boundaries, and a per-workflow **risk
+> classification** — in [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md). Deploy
+> hardening in [`SECURITY_HARDENING.md`](SECURITY_HARDENING.md).
+
+---
+
 ## ◇ Engagement scope
 
 ```bash

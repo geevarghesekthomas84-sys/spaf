@@ -16,6 +16,7 @@ _HELP = {
     "spaf_findings_total": "Findings produced, by severity.",
     "spaf_agent_runs_total": "Agent runs, by mode (plan|active).",
     "spaf_auth_failures_total": "Rejected requests (bad/missing API key).",
+    "spaf_rate_limited_total": "Requests rejected by the rate limiter (429).",
 }
 
 

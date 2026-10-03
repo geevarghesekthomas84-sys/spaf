@@ -12,6 +12,8 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
+import os
+
 from rich.progress import Progress
 
 from spaf.modules.recon import ReconModule
@@ -39,6 +41,17 @@ MODULE_MAP: Dict[str, Any] = {
 
 class ScopeError(PermissionError):
     """Raised when a target is outside the enforced engagement scope."""
+
+
+class InputError(ValueError):
+    """Raised when a target/payload is malformed or overly broad."""
+
+
+def _mock_enabled(options: Dict[str, Any]) -> bool:
+    """Mock mode runs the full pipeline without touching any real target."""
+    if options.get("mock"):
+        return True
+    return os.getenv("SPAF_MOCK", "").strip().lower() in ("1", "true", "yes", "on")
 
 
 class SpafService:
@@ -127,13 +140,32 @@ class SpafService:
         mod_cls = self._resolve_module(module)
 
         options = dict(options or {})
-        self._check_scope(target, surface)
-        self._audit(f"run_module:{module}", target, scope_ok=True, surface=surface)
+        mock = _mock_enabled(options)
+
+        # Input boundary: reject wildcard / whole-internet / huge-CIDR targets
+        # before anything else (independent of engagement scope). Skipped in mock
+        # mode so the pipeline can be exercised with synthetic targets.
+        if not mock:
+            from spaf.utils import validator
+            if validator.is_overly_broad_target(target):
+                self._audit(f"rejected:{module}", target, scope_ok=False, surface=surface,
+                            extra={"reason": "overly_broad"})
+                raise InputError(
+                    f"target '{target}' is overly broad (wildcard or huge CIDR). "
+                    f"Narrow it to the authorized hosts."
+                )
+            self._check_scope(target, surface)
+
+        self._audit(f"run_module:{module}", target, scope_ok=True, surface=surface,
+                    extra={"mock": True} if mock else None)
 
         if bus:
             bus.publish(Event("run_started", target=target, module=module))
 
         started = datetime.utcnow()
+
+        if mock:
+            return self._mock_result(module, target, started, bus)
         no_db = options.get("no_db", False)
         db_ready = await self._ensure_db(no_db)
         scan_id = None
@@ -175,6 +207,28 @@ class SpafService:
             if bus:
                 bus.publish(Event("run_failed", target=target, module=module, message=str(exc)))
             logger.error(f"service.run_module({module}) failed: {exc}")
+        return result
+
+    def _mock_result(self, module: str, target: str, started: datetime,
+                     bus: Optional[EventBus]) -> ScanResult:
+        """Deterministic synthetic result — no network, no DB, for safe testing."""
+        raw = [{
+            "target": target, "vuln_type": f"mock_{module}_finding",
+            "detail": f"[MOCK] synthetic {module} finding for {target}; no target was touched.",
+            "severity": "Info", "severity_order": 5,
+            "recommendation": "Mock mode — disable SPAF_MOCK / remove --mock to run for real.",
+            "scan_type": module, "discovered_at": started.isoformat(),
+        }]
+        findings = [Finding.from_dict(f) for f in raw]
+        result = ScanResult(scan_id=None, module=module, target=target, started_at=started,
+                            findings=findings, counts=severity_counts(findings))
+        result.completed_at = datetime.utcnow()
+        if bus:
+            for f in findings:
+                bus.publish(Event("finding", target=target, module=module,
+                                  message=f.vuln_type, data={"severity": f.severity}))
+            bus.publish(Event("run_completed", target=target, module=module,
+                              data={"count": len(findings), "mock": True}))
         return result
 
     # ------------------------------------------------------------------

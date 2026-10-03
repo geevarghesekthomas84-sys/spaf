@@ -1,33 +1,38 @@
-<!-- HERO: animated banner + typing line. These are hosted animated SVGs that
-     GitHub renders through its image proxy (they animate in the browser). -->
+<!-- HERO: hosted animated SVGs (GitHub proxies them; they animate in-browser).
+     The name + feature ticker live in the typing SVG, which renders text
+     reliably — capsule-render collapses whitespace in its desc field. -->
 <div align="center">
 
 <img alt="SPAF" width="100%"
-     src="https://capsule-render.vercel.app/api?type=rounded&height=220&color=0:04150a,100:0d1117&text=SPAF&fontSize=110&fontColor=39FF41&fontAlignY=42&animation=fadeIn&desc=S%20M%20A%20R%20T%20%20%20P%20E%20N%20T%20E%20S%20T%20I%20N%20G%20%20%20A%20U%20T%20O%20M%20A%20T%20I%20O%20N&descSize=15&descColor=5CE47A&descAlignY=66" />
+     src="https://capsule-render.vercel.app/api?type=waving&height=190&color=0:0b3d16,50:08361a,100:020806&text=SPAF&fontSize=96&fontColor=39FF41&fontAlignY=38&animation=fadeIn" />
 
 <a href="https://github.com/geevarghesekthomas84-sys/spaf">
-  <img alt="spaf agent · AI plans → runs → reports"
-       src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&weight=600&size=22&pause=1100&color=39FF41&center=true&vCenter=true&width=820&height=46&lines=%24+spaf+agent+target.com;AI+plans+%E2%86%92+runs+%E2%86%92+reports;subfinder+%C2%B7+httpx+%C2%B7+nuclei+%C2%B7+katana+%C2%B7+dnsx;red-team+automation+%C2%B7+AI-driven+%C2%B7+scope-safe" />
+  <img alt="Smart Pentesting Automation Framework · AI plans → runs → reports"
+       src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&weight=700&size=22&pause=1000&color=39FF41&center=true&vCenter=true&width=780&height=50&lines=Smart+Pentesting+Automation+Framework;%24+spaf+agent+target.com;AI+plans+%E2%86%92+runs+%E2%86%92+reports;recon+%C2%B7+web+%C2%B7+network+%C2%B7+nuclei+%C2%B7+crawler;CLI+%C2%B7+API+%C2%B7+MCP+%C2%B7+dashboard+%C2%B7+RBAC" />
 </a>
 
-<br>
+<p><b>AI-orchestrated offensive security</b> — one target in, a written assessment out.<br>
+<sub>Built for Kali, bug bounty, and red-team work · <b>authorized testing only</b></sub></p>
 
-[![version](https://img.shields.io/badge/version-1.11.0-39FF41?style=flat-square&labelColor=04150a)](CHANGELOG.md)
-[![CI](https://img.shields.io/github/actions/workflow/status/geevarghesekthomas84-sys/spaf/ci.yml?branch=master&style=flat-square&label=ci&labelColor=04150a&color=39FF41)](https://github.com/geevarghesekthomas84-sys/spaf/actions/workflows/ci.yml)
-[![Python](https://img.shields.io/badge/python-3.11+-2b3a2f?style=flat-square&labelColor=04150a)](https://python.org)
-[![License](https://img.shields.io/badge/license-MIT-2b3a2f?style=flat-square&labelColor=04150a)](LICENSE)
-[![Stars](https://img.shields.io/github/stars/geevarghesekthomas84-sys/spaf?style=flat-square&labelColor=04150a&color=39FF41)](https://github.com/geevarghesekthomas84-sys/spaf/stargazers)
+<p>
+  <a href="CHANGELOG.md"><img alt="version" src="https://img.shields.io/badge/version-1.11.0-39FF41?style=flat-square&labelColor=020806"></a>
+  <a href="https://github.com/geevarghesekthomas84-sys/spaf/actions/workflows/ci.yml"><img alt="ci" src="https://img.shields.io/github/actions/workflow/status/geevarghesekthomas84-sys/spaf/ci.yml?branch=master&style=flat-square&label=ci&labelColor=020806&color=39FF41"></a>
+  <a href="https://python.org"><img alt="python" src="https://img.shields.io/badge/python-3.11+-39FF41?style=flat-square&labelColor=020806&logo=python&logoColor=39FF41"></a>
+  <a href="LICENSE"><img alt="license" src="https://img.shields.io/badge/license-MIT-8CF5A0?style=flat-square&labelColor=020806"></a>
+  <a href="https://github.com/geevarghesekthomas84-sys/spaf/stargazers"><img alt="stars" src="https://img.shields.io/github/stars/geevarghesekthomas84-sys/spaf?style=flat-square&labelColor=020806&color=39FF41"></a>
+</p>
+
+<p>
+  <img alt="CLI" src="https://img.shields.io/badge/CLI-1f6f33?style=flat-square&labelColor=020806">
+  <img alt="HTTP API" src="https://img.shields.io/badge/HTTP_API-1f6f33?style=flat-square&labelColor=020806&logo=fastapi&logoColor=8CF5A0">
+  <img alt="MCP" src="https://img.shields.io/badge/MCP-1f6f33?style=flat-square&labelColor=020806&logo=anthropic&logoColor=8CF5A0">
+  <img alt="Dashboard" src="https://img.shields.io/badge/Dashboard-1f6f33?style=flat-square&labelColor=020806">
+  <img alt="Metrics" src="https://img.shields.io/badge/Metrics-1f6f33?style=flat-square&labelColor=020806&logo=prometheus&logoColor=8CF5A0">
+  <img alt="Deploy" src="https://img.shields.io/badge/Docker_+_Caddy-1f6f33?style=flat-square&labelColor=020806&logo=docker&logoColor=8CF5A0">
+  <img alt="RBAC" src="https://img.shields.io/badge/multi--engagement_RBAC-1f6f33?style=flat-square&labelColor=020806">
+</p>
 
 <sub>AI engines&nbsp; · &nbsp;Google Gemini&nbsp; · &nbsp;Anthropic Claude&nbsp; · &nbsp;Ollama&nbsp; · &nbsp;LM Studio&nbsp; · &nbsp;Shodan</sub>
-
-<br><br>
-
-![CLI](https://img.shields.io/badge/CLI-39FF41?style=flat-square&labelColor=04150a&logoColor=39FF41)
-![HTTP API](https://img.shields.io/badge/HTTP_API-REST_+_WebSocket-39FF41?style=flat-square&labelColor=04150a)
-![MCP](https://img.shields.io/badge/MCP-server_+_client-39FF41?style=flat-square&labelColor=04150a)
-![Dashboard](https://img.shields.io/badge/dashboard-+_metrics-39FF41?style=flat-square&labelColor=04150a)
-![Deploy](https://img.shields.io/badge/deploy-Docker_+_Caddy_TLS-39FF41?style=flat-square&labelColor=04150a)
-![RBAC](https://img.shields.io/badge/multi--engagement-RBAC-39FF41?style=flat-square&labelColor=04150a)
 
 </div>
 
